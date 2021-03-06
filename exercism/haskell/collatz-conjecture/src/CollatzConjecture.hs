@@ -32,5 +32,3 @@ collatzMaybe2 n = (\x -> (n, x)) <$> collatzMaybe n
 collatz :: Integer -> Maybe Integer
 collatz n = Just $ genericLength $ unfoldr collatzMaybe2 n
 
-
-
