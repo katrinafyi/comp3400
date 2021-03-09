@@ -17,12 +17,18 @@ EXAMPLE
 [[1, 3, 4], [1, 3, 5], [2, 3, 4], [2, 3, 5]]
 -}
 
+-- | rewrite fmap for lists because it's banned i guess.
+map' :: (a -> b) -> [a] -> [b]
+map' _ [] = []
+map' f (a:as) = f a : map' f as
+
 cartProd :: [[a]] -> [[a]]
 cartProd [] = [[]]
 cartProd (l:ls) = case l of
     [] -> []
-    (x:xs) -> ((x:) <$> cartProd ls) ++ cartProd (xs:ls)
+    (x:xs) -> ((x:) `map'` cartProd ls) ++ cartProd (xs:ls)
 -- (this was very hard.)
+-- also just sequence, apparently.
 
 
 -- this is complex. we are recursing into the first list and across the list
