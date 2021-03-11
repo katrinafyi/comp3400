@@ -10,6 +10,7 @@ library:
     - CartProd
     - Checksum
     - Magic
+    # - Boolean
   source-dirs: src
   ghc-options: []
   # dependencies:
