@@ -40,26 +40,29 @@ toVal D6 = 6
 
 filterDice :: Category -> [Die] -> [Die]
 filterDice cat dice =
-  let filterWith :: (Die -> Bool) -> [Die]
-      filterWith f = filter f dice
+  let diceWhere :: (Die -> Bool) -> [Die]
+      diceWhere = flip filter dice
+
+      diceIf :: Bool -> [Die]
+      diceIf = diceWhere . const
 
       freq :: Die -> Int
-      freq n = length $ filterWith (== n)
+      freq n = length $ diceWhere (== n)
 
       freqs = sort $ filter (> 0) $ freq <$> [minBound .. maxBound]
   in  case cat of
-        Ones           -> filterWith (== D1)
-        Twos           -> filterWith (== D2)
-        Threes         -> filterWith (== D3)
-        Fours          -> filterWith (== D4)
-        Fives          -> filterWith (== D5)
-        Sixes          -> filterWith (== D6)
-        FullHouse      -> if freqs == [2, 3] then dice else []
-        FourOfAKind    -> take 4 $ filterWith ((>= 4) . freq)
-        LittleStraight -> if sort dice == [D1 .. D5] then dice else []
-        BigStraight    -> if sort dice == [D2 .. D6] then dice else []
+        Ones           -> diceWhere (== D1)
+        Twos           -> diceWhere (== D2)
+        Threes         -> diceWhere (== D3)
+        Fours          -> diceWhere (== D4)
+        Fives          -> diceWhere (== D5)
+        Sixes          -> diceWhere (== D6)
+        FullHouse      -> diceIf $ freqs == [2, 3]
+        FourOfAKind    -> take 4 $ diceWhere ((>= 4) . freq)
+        LittleStraight -> diceIf $ sort dice == [D1 .. D5]
+        BigStraight    -> diceIf $ sort dice == [D2 .. D6]
         Choice         -> dice
-        Yacht          -> filterWith ((== 5) . freq)
+        Yacht          -> diceWhere ((== 5) . freq)
 
 scoreDice :: Category -> [Die] -> Int
 scoreDice cat dice =
