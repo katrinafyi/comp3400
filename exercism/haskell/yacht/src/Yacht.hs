@@ -48,30 +48,29 @@ filterDice cat dice =
 
       freqs = sort $ filter (> 0) $ freq <$> [minBound .. maxBound]
   in  case cat of
-        Ones        -> filterWith (== D1)
-        Twos        -> filterWith (== D2)
-        Threes      -> filterWith (== D3)
-        Fours       -> filterWith (== D4)
-        Fives       -> filterWith (== D5)
-        Sixes       -> filterWith (== D6)
-        FullHouse   -> if freqs == [2, 3] then dice else []
-        FourOfAKind -> take 4 $ filterWith ((>= 4) . freq)
-        LittleStraight ->
-          if sort dice == [D1, D2, D3, D4, D5] then dice else []
-        BigStraight -> if sort dice == [D2, D3, D4, D5, D6] then dice else []
-        Choice      -> dice
-        Yacht       -> filterWith ((== 5) . freq)
+        Ones           -> filterWith (== D1)
+        Twos           -> filterWith (== D2)
+        Threes         -> filterWith (== D3)
+        Fours          -> filterWith (== D4)
+        Fives          -> filterWith (== D5)
+        Sixes          -> filterWith (== D6)
+        FullHouse      -> if freqs == [2, 3] then dice else []
+        FourOfAKind    -> take 4 $ filterWith ((>= 4) . freq)
+        LittleStraight -> if sort dice == [D1 .. D5] then dice else []
+        BigStraight    -> if sort dice == [D2 .. D6] then dice else []
+        Choice         -> dice
+        Yacht          -> filterWith ((== 5) . freq)
 
 scoreDice :: Category -> [Die] -> Int
 scoreDice cat dice =
   let filtered = filterDice cat dice
-      ifValid :: Int -> Int
-      ifValid n = if null filtered then 0 else n
-  in  case cat of
-        LittleStraight -> ifValid 30
-        BigStraight    -> ifValid 30
-        Yacht          -> ifValid 50
-        _              -> sum $ toVal <$> filtered
+  in  if null filtered
+        then 0
+        else case cat of
+          LittleStraight -> 30
+          BigStraight    -> 30
+          Yacht          -> 50
+          _              -> sum $ toVal <$> filtered
 
 yacht :: Category -> [Int] -> Int
 yacht c ns = case traverse toDie ns of
