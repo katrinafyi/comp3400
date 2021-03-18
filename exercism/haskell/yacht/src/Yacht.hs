@@ -49,7 +49,7 @@ filterDice cat dice =
       freq :: Die -> Int
       freq n = length $ diceWhere (== n)
 
-      freqs = sort $ filter (> 0) $ freq <$> [minBound .. maxBound]
+      freqs = sort $ freq <$> nub dice
   in  case cat of
         Ones           -> diceWhere (== D1)
         Twos           -> diceWhere (== D2)
@@ -62,7 +62,7 @@ filterDice cat dice =
         LittleStraight -> diceIf $ sort dice == [D1 .. D5]
         BigStraight    -> diceIf $ sort dice == [D2 .. D6]
         Choice         -> dice
-        Yacht          -> diceWhere ((== 5) . freq)
+        Yacht          -> diceIf $ freqs == [5]
 
 scoreDice :: Category -> [Die] -> Int
 scoreDice cat dice =
