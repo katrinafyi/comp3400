@@ -1,9 +1,10 @@
-module Yacht (yacht, Category(..)) where
+module Yacht
+  ( yacht
+  , Category(..)
+  ) where
 
-import Control.Monad
-import Data.List
-import Data.Maybe
-import qualified Data.Map.Strict as Map
+import           Data.List
+import           Data.Maybe
 
 data Category = Ones
               | Twos
@@ -18,60 +19,62 @@ data Category = Ones
               | Choice
               | Yacht
 
--- | Dice is a list of exactly six integers in ascending order
-data Dice = Dice [Int] deriving (Eq, Show)
+data Die = D1 | D2 | D3 | D4 | D5 | D6
+    deriving (Eq, Show, Ord, Enum, Bounded)
 
-toDice :: [Int] -> Maybe Dice
-toDice ns = do
-    guard $ length ns == 5
-    Just $ Dice $ sort ns
+toDie :: Int -> Maybe Die
+toDie 1 = Just D1
+toDie 2 = Just D2
+toDie 3 = Just D3
+toDie 4 = Just D4
+toDie 5 = Just D5
+toDie 6 = Just D6
+toDie _ = Nothing
 
--- | counts how many occurences of the given value occur in the list.
-frequency :: Ord a => [a] -> Map.Map a Int
-frequency a = foldr (\k -> Map.insertWith (+) k 1) Map.empty a
+toVal :: Die -> Int
+toVal D1 = 1
+toVal D2 = 2
+toVal D3 = 3
+toVal D4 = 4
+toVal D5 = 5
+toVal D6 = 6
 
--- | returns the counts of elements in the list, ascending.
---
--- example: counts [100, 200, 200] = [1, 2]
-counts :: Ord a => [a] -> [Int]
-counts = sort . Map.elems . frequency
+filterDice :: Category -> [Die] -> [Die]
+filterDice cat dice =
+  let filterWith :: (Die -> Bool) -> [Die]
+      filterWith f = filter f dice
 
--- | given a category, returns the
-catRequires :: Category -> Dice -> Bool
-catRequires c (Dice dice) =
-  let
-    diceCounts = counts dice
-  in case c of
-    FullHouse -> diceCounts == [2,3]
-    FourOfAKind -> maximum diceCounts >= 4
-    LittleStraight -> dice == [1, 2, 3, 4, 5]
-    BigStraight -> dice == [2, 3, 4, 5, 6]
-    Yacht -> diceCounts == [5]
-    _ -> True
+      freq :: Die -> Int
+      freq n = length $ filterWith (== n)
 
+      freqs = sort $ filter (> 0) $ freq <$> [minBound .. maxBound]
+  in  case cat of
+        Ones        -> filterWith (== D1)
+        Twos        -> filterWith (== D2)
+        Threes      -> filterWith (== D3)
+        Fours       -> filterWith (== D4)
+        Fives       -> filterWith (== D5)
+        Sixes       -> filterWith (== D6)
+        FullHouse   -> if freqs == [2, 3] then dice else []
+        FourOfAKind -> take 4 $ filterWith ((>= 4) . freq)
+        LittleStraight ->
+          if sort dice == [D1, D2, D3, D4, D5] then dice else []
+        BigStraight -> if sort dice == [D2, D3, D4, D5, D6] then dice else []
+        Choice      -> dice
+        Yacht       -> filterWith ((== 5) . freq)
 
-catScore :: Category -> Dice -> Int
-catScore c (Dice dice) =
-  let
-    diceFreq = frequency dice
-    freq :: Int -> Int
-    freq a = Map.findWithDefault 0 a diceFreq
-  in case c of
-    Ones -> freq 1
-    Twos -> 2 * freq 2
-    Threes -> 3 * freq 3
-    Fours -> 4 * freq 4
-    Fives -> 5 * freq 5
-    Sixes -> 6 * freq 6
-    FullHouse -> sum $ filter ((>= 2) . freq) dice
-    FourOfAKind -> sum $ take 4 $ filter ((>= 4) . freq) dice
-    LittleStraight -> 30
-    BigStraight -> 30
-    Choice -> sum dice
-    Yacht -> 50
+scoreDice :: Category -> [Die] -> Int
+scoreDice cat dice =
+  let filtered = filterDice cat dice
+  in  case filtered of
+        [] -> 0
+        _  -> case cat of
+          LittleStraight -> 30
+          BigStraight    -> 30
+          Yacht          -> 50
+          _              -> sum $ toVal <$> filtered
 
 yacht :: Category -> [Int] -> Int
-yacht c ns = fromMaybe 0 $ do
-    dice <- toDice ns
-    guard $ catRequires c dice
-    Just $ catScore c dice
+yacht c ns = case traverse toDie ns of
+  Just dice -> scoreDice c dice
+  Nothing   -> 0
