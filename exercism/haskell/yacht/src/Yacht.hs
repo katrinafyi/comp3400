@@ -4,7 +4,6 @@ module Yacht
   ) where
 
 import           Data.List
-import           Data.Maybe
 
 data Category = Ones
               | Twos
@@ -66,13 +65,13 @@ filterDice cat dice =
 scoreDice :: Category -> [Die] -> Int
 scoreDice cat dice =
   let filtered = filterDice cat dice
-  in  case filtered of
-        [] -> 0
-        _  -> case cat of
-          LittleStraight -> 30
-          BigStraight    -> 30
-          Yacht          -> 50
-          _              -> sum $ toVal <$> filtered
+      ifValid :: Int -> Int
+      ifValid n = if null filtered then 0 else n
+  in  case cat of
+        LittleStraight -> ifValid 30
+        BigStraight    -> ifValid 30
+        Yacht          -> ifValid 50
+        _              -> sum $ toVal <$> filtered
 
 yacht :: Category -> [Int] -> Int
 yacht c ns = case traverse toDie ns of
