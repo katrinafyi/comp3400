@@ -43,5 +43,15 @@ matchPairs = go []
     go [] (r:rs) = go [r] rs
     go ls [] = reverse ls
 
+-- | Fold through a list of tokens matching and removing pairs as they appear.
+-- Result is list of unmatched tokens.
+-- We can do this because matchPairs above considers one element "r" at a time
+-- while accumulating something in ls. This is exactly the pattern of a fold.
+matchPairs' :: Bracket -> [Bracket] -> [Bracket]
+matchPairs' x (y:ys)
+  | isPair x y = ys
+  | otherwise = x:y:ys
+matchPairs' x [] = [x]
+
 arePaired :: String -> Bool
-arePaired = null . matchPairs . mapMaybe toBracket
+arePaired = null . foldr matchPairs' [] . mapMaybe toBracket
