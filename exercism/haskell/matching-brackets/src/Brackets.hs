@@ -1,23 +1,25 @@
-module Brackets (arePaired, matchPairs) where
+module Brackets
+    ( arePaired
+    , matchPairs
+    ) where
 
-import Control.Monad
-import Data.Maybe
+import           Data.Maybe
 
-otherPair :: Char -> Char
-otherPair c = case c of
-    '(' -> ')'
-    '[' -> ']'
-    '{' -> '}'
-    ')' -> '('
-    ']' -> '['
-    '}' -> '{'
-    _ -> error "invalid bracket character"
+other :: Char -> Maybe Char
+other c = case c of
+    '(' -> Just ')'
+    '[' -> Just ']'
+    '{' -> Just '}'
+    ')' -> Just '('
+    ']' -> Just '['
+    '}' -> Just '{'
+    _   -> Nothing
 
 openChars :: String
 openChars = "([{"
 
 closeChars :: String
-closeChars = otherPair <$> openChars
+closeChars = catMaybes $ other <$> openChars
 
 isOpen :: Char -> Bool
 isOpen = (`elem` openChars)
@@ -25,28 +27,24 @@ isOpen = (`elem` openChars)
 isClose :: Char -> Bool
 isClose = (`elem` closeChars)
 
--- | attempts to match bracket sequences within the string.
---
--- generally, matchPairs returns Nothing if the given string cannot be a suffix
--- of any string with matched brackets (called "valid" strings), e.g. "[}".
--- otherwise, it returns Just rest where rest is string with as many matching
--- brackets as possible matched and removed. rest only contains closing brackets
--- indicating this could be a suffix of some string which contained opening brackets.
---
--- examples:
--- matchPairs "[}" = Nothing -- incorrectly matched brackets are always invalid.
--- matchPairs "}{" = Nothing -- unmatched open bracket cannot be suffix.
--- matchPairs "{}[]" = Just "" -- valid suffix and pairs {}[] are removed.
--- matchPairs "}[][[]]}" = Just "}}" -- matching brackets removed leaving "}}".
-matchPairs :: String -> Maybe String
-matchPairs [] = Just []
-matchPairs (x:xs)
-    | isClose x = (x:) <$> matchPairs xs
-    | isOpen x = do
-        rest <- matchPairs xs
-        guard $ [otherPair x] == take 1 rest
-        Just $ drop 1 rest
-    | otherwise = matchPairs xs
+isBracket :: Char -> Bool
+isBracket c = isOpen c || isClose c
+
+-- | Given a string, returns the mismatched brackets in that string.
+matchPairs :: [Char] -> String
+matchPairs = go []
+  where
+    -- | Finds matches by keeping track of opened brackets.
+    -- First argument is stack of unmatched tokens, most recent first.
+    -- Second argument is string to process.
+    go :: [Char] -> [Char] -> String
+    go ls' (r : rs) | isClose r && isPair = go ls rs
+                    | isBracket r         = go (r : ls') rs
+                    | otherwise           = go ls' rs
+      where
+        (l', ls) = splitAt 1 ls'
+        isPair   = l' == maybeToList (other r)
+    go ls' [] = reverse ls'
 
 arePaired :: String -> Bool
-arePaired xs = fromMaybe False $ null <$> matchPairs xs
+arePaired = null . matchPairs
