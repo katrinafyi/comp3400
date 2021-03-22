@@ -1,50 +1,47 @@
-module Brackets
-    ( arePaired
-    , matchPairs
-    ) where
+module Brackets (arePaired, matchPairs) where
 
 import           Data.Maybe
 
-other :: Char -> Maybe Char
-other c = case c of
-    '(' -> Just ')'
-    '[' -> Just ']'
-    '{' -> Just '}'
-    ')' -> Just '('
-    ']' -> Just '['
-    '}' -> Just '{'
-    _   -> Nothing
+data BracketType = Round
+                 | Square
+                 | Curly
+  deriving (Eq, Show)
 
-openChars :: String
-openChars = "([{"
+data Bracket = L BracketType
+             | R BracketType
+  deriving (Eq, Show)
 
-closeChars :: String
-closeChars = catMaybes $ other <$> openChars
+toBracket :: Char -> Maybe Bracket
+toBracket '(' = Just $ L Round
+toBracket '{' = Just $ L Curly
+toBracket '[' = Just $ L Square
+toBracket ')' = Just $ R Round
+toBracket '}' = Just $ R Curly
+toBracket ']' = Just $ R Square
+toBracket _ = Nothing
 
-isOpen :: Char -> Bool
-isOpen = (`elem` openChars)
+other :: Bracket -> Bracket
+other (L x) = R x
+other (R x) = L x
 
-isClose :: Char -> Bool
-isClose = (`elem` closeChars)
+-- | Checks whether the given brackets form a left-right pair.
+isPair :: Bracket -> Bracket -> Bool
+isPair (L x) (R y) = x == y
+isPair _ _ = False
 
-isBracket :: Char -> Bool
-isBracket c = isOpen c || isClose c
-
--- | Given a string, returns the mismatched brackets in that string.
-matchPairs :: [Char] -> String
+-- | Given a list of brackets, matches bracket pairs and returns the unmatched brackets.
+matchPairs :: [Bracket] -> [Bracket]
 matchPairs = go []
   where
     -- | Finds matches by keeping track of opened brackets.
     -- First argument is stack of unmatched tokens, most recent first.
     -- Second argument is string to process.
-    go :: [Char] -> [Char] -> String
-    go ls' (r : rs) | isClose r && isPair = go ls rs
-                    | isBracket r         = go (r : ls') rs
-                    | otherwise           = go ls' rs
-      where
-        (l', ls) = splitAt 1 ls'
-        isPair   = l' == maybeToList (other r)
-    go ls' [] = reverse ls'
+    go :: [Bracket] -> [Bracket] -> [Bracket]
+    go (l:ls) (r:rs)
+      | isPair l r = go ls rs
+      | otherwise = go (r:l:ls) rs
+    go [] (r:rs) = go [r] rs
+    go ls [] = reverse ls
 
 arePaired :: String -> Bool
-arePaired = null . matchPairs
+arePaired = null . matchPairs . mapMaybe toBracket
