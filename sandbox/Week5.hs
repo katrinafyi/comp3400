@@ -17,21 +17,18 @@ lcs (x:xs) (y:ys)
   | otherwise = longest [lcs (x:xs) ys, lcs xs (y:ys)]
 lcs _ _ = []
 
--- | Given a list, returns the list except the front and end elements.
-trimEnds :: [a] -> [a]
-trimEnds (_:xs) = reverse $ drop 1 $ reverse xs
-trimEnds _ = []
 
 type Partition = [String]
 
 -- | Determines whether the given string is a palindrome.
-isPalindrome :: String -> Bool
+isPalindrome :: Eq a => [a] -> Bool
 isPalindrome x = x == reverse x
 
--- | Prepends the character to the first part of the partition.
-prependToPartition :: Char -> Partition -> Partition
-prependToPartition x (p:ps) = (x:p):ps
-prependToPartition x [] = [[x]]
+-- | Prepends the value to the first list in the list of lists.
+-- Inserts the valid into the list if it is empty.
+prependToHead :: a -> [[a]] -> [[a]]
+prependToHead x (p:ps) = (x:p):ps
+prependToHead x [] = [[x]]
 
 -- | Determines whether the partition is non-empty and the first part is a palindrome.
 headIsPalindrome :: Partition -> Bool
@@ -48,12 +45,9 @@ palinPartitions = filter headIsPalindrome . go
   where
     go :: String -> [Partition]
     go [] = [[]]
-    go (x:xs) = fmap ([x]:) restValid ++ (prependToPartition x <$> restNotNull)
+    go (x:xs) = fmap ([x]:) restValid ++ (prependToHead x <$> rest)
       where
         rest = go xs
-
-        restNotNull = filter (not . null) rest
-
         restValid = filter headIsPalindrome rest
 
 -- | Implementation of palindromic partitions using foldr.
@@ -77,6 +71,140 @@ palinPartitions' = filter headIsPalindrome . foldr go [[]]
     -- filter on the final result of the fold.
     go :: Char -> [Partition] -> [Partition]
     go c [] = [[[c]]]
-    go c rest = fmap ([c]:) restPalins ++ fmap (prependToPartition c) rest
+    go c rest = fmap ([c]:) restPalins ++ fmap (prependToHead c) rest
       where
         restPalins = filter headIsPalindrome rest
+
+-- appendix: palinPartitions derivation.
+
+-- a reasonable starting point. recurse by character and prepend single
+-- character string to each partition, and also prefix this character to the head
+-- of every partition. obviously wrong, since no palindrome checking.
+p1 :: String -> [Partition]
+p1 = go
+  where
+    go :: String -> [Partition]
+    go [] = [[]]
+    go (x:xs) = fmap ([x]:) rest ++ (prependToHead x <$> rest)
+      where
+        rest = go xs
+-- we have generated a list of all partitions (twice)!
+-- of course, you could filter this by all isPalindrome but i only realised that
+-- now. (and that's boring!) (and slow(er)!)
+{-
+*Week5> p1 "abb"
+[["a","b","b"],["a","b","b"],["a","bb"],["a","bb"],["ab","b"],["ab","b"],["abb"],["abb"]]
+-}
+-- fun question: why does this have doubles? and how to fix it?
+
+-- we will add filtering by palindrome. assume the recursive case holds for xs
+-- and go xs returns a list of palindromic partitions of xs where every part
+-- of every partition is palindromic.
+
+-- since a single character string is always palindromic, we don't need to filter
+-- the left of ++.
+-- for the right expression, since the base case holds we know everything in
+-- go xs is palindromic. we prepend x to the head of each partition, possibly
+-- making the head non-palindromic. filter to ensure it stays palindromic.
+p2 :: String -> [Partition]
+p2 = go
+  where
+    go :: String -> [Partition]
+    go [] = [[]]
+    go (x:xs) = fmap ([x]:) rest ++ filter headIsPalindrome (prependToHead x <$> rest)
+      where
+        rest = go xs
+-- observations:
+-- we're still getting doubled (bad).
+-- we're getting less than every partition (good!).
+-- we're not getting every palindromic partition (missing "aba", bad).
+{-
+*Week5> p2 "aba"
+[["a","b","a"],["a","b","a"]]
+*Week5> p2 "aaa"
+[["a","a","a"],["a","a","a"],["a","aa"],["a","aa"],["aa","a"],["aa","a"],["aaa"],["aaa"]]
+-}
+
+-- we'll try to fix the doubling. this comes from the step immediately before
+-- the base case. here, rest = [[]] and so left side of ++ is [[[x]]] but right
+-- side is also [[[x]]]. as a somewhat hacky fix, we exclude null lists from
+-- the left expression.
+p3 :: String -> [Partition]
+p3 = go
+  where
+    go :: String -> [Partition]
+    go [] = [[]]
+    go (x:xs) = fmap ([x]:) restNotNull ++ filter headIsPalindrome (prependToHead x <$> rest)
+      where
+        rest = go xs
+        restNotNull = filter (not . null) rest
+
+-- much better, but still missing some valid partitions.
+{-
+*Week5> p3 "aaa"
+[["a","a","a"],["a","aa"],["aa","a"],["aaa"]]
+*Week5> p3 "aba"
+[["a","b","a"]]
+-}
+
+-- some experimentation and thinking leads us to conclude that it's missing
+-- partitions which contain different characters.
+-- this makes sense; our code requires every intermediate
+-- part of a palindrome be itself a palindrome otherwise it is filtered out.
+
+-- we need to somehow allow incomplete partitions to be found and included.
+-- to fix this, we will loosen the invariant. instead of go returning a list of
+-- palindromic partitions, we will make it return a list of "almost palindromic
+-- partitions". an almost palindromic partition is one which is palindromic except
+-- maybe for the first part of the partition.
+
+-- with this in mind, we need to shuffle things around. now, we shouldn't filter
+-- on the ++ right expression; this is the side which concats directly onto the
+-- head and so will generate almost palindromic partitions.
+-- left of the ++, we need to filter _before_ prepending [x] because the invariant
+-- only allows the first part to be non-palindromic. that is, we should only
+-- prepend [x] onto _fully_ palindromic partitions.
+
+-- making these changes:
+p4 :: String -> [Partition]
+p4 = go
+  where
+    go :: String -> [Partition]
+    go [] = [[]]
+    go (x:xs) = fmap ([x]:) restPalindromic ++ (prependToHead x <$> rest)
+      where
+        rest = go xs
+        restPalindromic = filter headIsPalindrome rest
+-- remark: we define headIsPalindrome to return False for empty partitions
+-- to incorporate the not null into one filter.
+
+-- almost there. go now returns almost palindromic partitions, so we need to
+-- filter its return value to fully palindromic partitions before returning
+-- from the main function.
+{-
+*Week5> p4 "aba"
+[["a","b","a"],["ab","a"],["aba"]]
+-}
+
+-- fixing that up...
+p5 :: String -> [Partition]
+p5 = filter headIsPalindrome . go
+  where
+    go :: String -> [Partition]
+    go [] = [[]]
+    go (x:xs) = fmap ([x]:) restPalindromic ++ (prependToHead x <$> rest)
+      where
+        rest = go xs
+        restPalindromic = filter headIsPalindrome rest
+
+-- huzzah!
+{-
+*Week5> p5 "aba"
+[["a","b","a"],["aba"]]
+*Week5> p5 "abaa"
+[["a","b","a","a"],["a","b","aa"],["aba","a"]]
+-}
+
+-- exercise: convince yourself that this is a foldr across the string.
+-- notes: each step of go depends only on x, the current character,
+-- and go xs, the result of folding across everything to the right.
