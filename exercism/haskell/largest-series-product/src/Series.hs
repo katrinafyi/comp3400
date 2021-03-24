@@ -22,7 +22,9 @@ toDigit x = Left $ InvalidDigit x
 takeExact :: Int -> [a] -> Maybe [a]
 takeExact 0 _ = Just []
 takeExact _ [] = Nothing
-takeExact n (x:xs) = (x:) <$> takeExact (n - 1) xs
+takeExact n (x:xs)
+  | n < 0 = Nothing
+  | otherwise = (x:) <$> takeExact (n - 1) xs
 
 -- | Returns a sliding window of size n across the list.
 -- No sublists of length != n are returned; if the list contains less than n
