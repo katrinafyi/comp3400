@@ -1,6 +1,7 @@
 module Series (Error(..), largestProduct) where
 
 import           Data.Maybe
+import           Control.Applicative
 
 data Error = InvalidSpan
            | InvalidDigit Char
@@ -28,27 +29,23 @@ takeExact n (x:xs) = (x:) <$> takeExact (n - 1) xs
 -- | Returns a sliding window of size n across the list.
 -- No sublists of length < n are returned; if the list contains less than n
 -- elements, the returned list will be empty. If n is 0, the return value
--- contains a single empty list.
+-- contains a single empty list. If n is negative, an empty list is returned.
 window :: Int -> [a] -> [[a]]
 window 0 _ = [[]]
 window _ [] = []
 window n (x:xs) = maybeToList (takeExact n (x:xs)) ++ window n xs
 
+-- | Returns the maximum of the given list
 maxMaybe :: Ord a => [a] -> Maybe a
-maxMaybe [] = Nothing
-maxMaybe (x:xs) = case maxRest of
-  Just y  -> Just $ max x y
-  Nothing -> Just x
+maxMaybe = foldr go Nothing
   where
-    maxRest = maxMaybe xs
+    go :: Ord a => a -> Maybe a -> Maybe a
+    go x y = fmap (max x) y <|> Just x
 
 largestProduct :: Int -> String -> Either Error Integer
-largestProduct size digits
-  | size < 0 = Left InvalidSpan
-  | otherwise = do
-      ns <- traverse toDigit digits
-      case maxMaybe $ foldr (*) 1 <$> window size ns of
-        Just maxProd -> Right maxProd
-        Nothing -> Left InvalidSpan
-
+largestProduct size digits = do
+  ns <- traverse toDigit digits
+  case maxMaybe $ foldr (*) 1 <$> window size ns of
+    Just maxProd -> Right maxProd
+    Nothing      -> Left InvalidSpan
 -- ass.
