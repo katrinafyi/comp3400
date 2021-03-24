@@ -31,10 +31,11 @@ prependToHead x (p:ps) = (x:p):ps
 prependToHead x [] = [[x]]
 
 -- | Determines whether the partition is non-empty and the first part is a palindrome.
-headIsPalindrome :: Partition -> Bool
-headIsPalindrome = maybe False isPalindrome . listToMaybe
+headIsPalindrome :: Eq a => [[a]] -> Bool
+headIsPalindrome (x:xs) = isPalindrome x
+headIsPalindrome [] = False
 
--- palinPartitions "iiii" = [["i", "i", "i", "i"], ["ii", "ii"], ["i", "ii", "i"], ["iiii"]]
+-- palinPartitions "iiii" = [["i","i","i","i"],["i","i","ii"],["i","ii","i"],["i","iii"],["ii","i","i"],["ii","ii"],["iii","i"],["iiii"]]
 -- palinPartitions "nitin" = [["n", "i", "t", "i", "n"], ["n", "iti", "n"], ["nitin"]]
 -- Partition string into partitions such that:
 --  - the partitions concat to the full string, and
