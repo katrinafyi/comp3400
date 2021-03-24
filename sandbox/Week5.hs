@@ -3,6 +3,7 @@ module Week5 where
 import           Data.Foldable
 import           Data.Ord
 import           Data.Maybe
+import           Data.List
 
 -- | Given a list of lists, returns the list with maximum length.
 -- Throws if argument is empty.
@@ -76,19 +77,25 @@ palinPartitions' = filter headIsPalindrome . foldr go [[]]
       where
         restPalins = filter headIsPalindrome rest
 
--- | Given a list, returns all sublists from the start which end with the given value.
+
+-- | Given a list, returns a list of prefixes which end with the given value.
 prefixesEndingWith :: Eq a => a -> [a] -> [[a]]
 prefixesEndingWith _ [] = []
 prefixesEndingWith end (x:xs)
-  | end == x = [x]:rest
-  | otherwise = rest
-  where
-    rest = (x:) <$> prefixesEndingWith end xs
+  | end == x = [x] : rest
+  | otherwise = rest
+  where
+    rest = (x:) <$> prefixesEndingWith end xs
+
+-- | Given a list, returns a list of prefixes which end with the head.
+prefixesEndingWithHead :: Eq a => [a] -> [[a]]
+prefixesEndingWithHead [] = []
+prefixesEndingWithHead (x:xs) = prefixesEndingWith x (x:xs)
 
 -- | Given a list, returns sublists which have the same first and last element.
 -- Here, a sublist must be contiguous and cannot be empty.
 sublistSameFirstLast :: Eq a => [a] -> [[a]]
-sublistSameFirstLast xs = concatMap (\x -> prefixesEndingWith x xs) xs
+sublistSameFirstLast = nub . concatMap prefixesEndingWithHead . tails
 
 
 
