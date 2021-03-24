@@ -25,7 +25,7 @@ isPalindrome :: Eq a => [a] -> Bool
 isPalindrome x = x == reverse x
 
 -- | Prepends the value to the first list in the list of lists.
--- Inserts the valid into the list if it is empty.
+-- Inserts the value into the list if it is empty.
 prependToHead :: a -> [[a]] -> [[a]]
 prependToHead x (p:ps) = (x:p):ps
 prependToHead x [] = [[x]]
@@ -46,7 +46,7 @@ palinPartitions = filter headIsPalindrome . go
   where
     go :: String -> [Partition]
     go [] = [[]]
-    go (x:xs) = fmap ([x]:) restValid ++ (prependToHead x <$> rest)
+    go (x:xs) = fmap ([x]:) restValid ++ fmap (prependToHead x) rest
       where
         rest = go xs
         restValid = filter headIsPalindrome rest
