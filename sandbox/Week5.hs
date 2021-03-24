@@ -76,7 +76,23 @@ palinPartitions' = filter headIsPalindrome . foldr go [[]]
       where
         restPalins = filter headIsPalindrome rest
 
--- appendix: palinPartitions derivation.
+-- | Given a list, returns all sublists from the start which end with the given value.
+prefixesEndingWith :: Eq a => a -> [a] -> [[a]]
+prefixesEndingWith _ [] = []
+prefixesEndingWith end (x:xs)
+  | end == x = [x]:rest
+  | otherwise = rest
+  where
+    rest = (x:) <$> prefixesEndingWith end xs
+
+-- | Given a list, returns sublists which have the same first and last element.
+-- Here, a sublist must be contiguous and cannot be empty.
+sublistSameFirstLast :: Eq a => [a] -> [[a]]
+sublistSameFirstLast xs = concatMap (\x -> prefixesEndingWith x xs) xs
+
+
+
+-- appendix: palinPartitions fold derivation.
 
 -- a reasonable starting point. recurse by character and prepend single
 -- character string to each partition, and also prefix this character to the head
@@ -89,6 +105,7 @@ p1 = go
     go (x:xs) = fmap ([x]:) rest ++ (prependToHead x <$> rest)
       where
         rest = go xs
+
 -- we have generated a list of all partitions (twice)!
 -- of course, you could filter this by all isPalindrome but i only realised that
 -- now. (and that's boring!) (and slow(er)!)
@@ -112,9 +129,11 @@ p2 = go
   where
     go :: String -> [Partition]
     go [] = [[]]
-    go (x:xs) = fmap ([x]:) rest ++ filter headIsPalindrome (prependToHead x <$> rest)
+    go (x:xs) = fmap ([x]:) rest
+      ++ filter headIsPalindrome (prependToHead x <$> rest)
       where
         rest = go xs
+
 -- observations:
 -- we're still getting doubled (bad).
 -- we're getting less than every partition (good!).
@@ -135,7 +154,8 @@ p3 = go
   where
     go :: String -> [Partition]
     go [] = [[]]
-    go (x:xs) = fmap ([x]:) restNotNull ++ filter headIsPalindrome (prependToHead x <$> rest)
+    go (x:xs) = fmap ([x]:) restNotNull
+      ++ filter headIsPalindrome (prependToHead x <$> rest)
       where
         rest = go xs
         restNotNull = filter (not . null) rest
