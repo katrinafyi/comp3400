@@ -33,7 +33,9 @@ takeExact n (x:xs) = (x:) <$> takeExact (n - 1) xs
 window :: Int -> [a] -> [[a]]
 window 0 _ = [[]]
 window _ [] = []
-window n (x:xs) = maybeToList (takeExact n (x:xs)) ++ window n xs
+window n (x:xs) = case takeExact n (x:xs) of
+  Just chunk -> chunk : window n xs
+  Nothing -> []
 
 -- | Returns the maximum of the given list
 maxMaybe :: Ord a => [a] -> Maybe a
