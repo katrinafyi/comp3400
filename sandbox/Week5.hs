@@ -80,13 +80,12 @@ palinPartitions' = filter headIsPalindrome . foldr go [[]]
 
 -- | Given a list, returns a list of prefixes which end with the given value.
 prefixesEndingWith :: Eq a => a -> [a] -> [[a]]
-prefixesEndingWith end = foldr (go end) []
-  where
-    go :: Eq a => a -> a -> [[a]] -> [[a]]
-    go end x acc
-        | x == end = [x] : rest
-        | otherwise = rest
-      where rest = (x:) <$> acc
+prefixesEndingWith _ [] = []
+prefixesEndingWith end (x:xs)
+  | end == x = [x] : rest
+  | otherwise = rest
+  where
+    rest = (x:) <$> prefixesEndingWith end xs
 
 -- | Given a list, returns a list of prefixes which end with the head.
 prefixesEndingWithHead :: Eq a => [a] -> [[a]]
