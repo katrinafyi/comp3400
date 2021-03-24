@@ -1,8 +1,5 @@
 module Series (Error(..), largestProduct) where
 
-import           Data.Maybe
-import           Control.Applicative
-
 data Error = InvalidSpan
            | InvalidDigit Char
   deriving (Show, Eq)
@@ -21,13 +18,14 @@ toDigit '0' = Right 0
 toDigit x = Left $ InvalidDigit x
 
 -- | Returns Just the first n elements of the list or Nothing otherwise.
+-- Returns takeExact n also returns Nothing for negative n.
 takeExact :: Int -> [a] -> Maybe [a]
 takeExact 0 _ = Just []
 takeExact _ [] = Nothing
 takeExact n (x:xs) = (x:) <$> takeExact (n - 1) xs
 
 -- | Returns a sliding window of size n across the list.
--- No sublists of length < n are returned; if the list contains less than n
+-- No sublists of length != n are returned; if the list contains less than n
 -- elements, the returned list will be empty. If n is 0, the return value
 -- contains a single empty list. If n is negative, an empty list is returned.
 window :: Int -> [a] -> [[a]]
@@ -37,12 +35,12 @@ window n (x:xs) = case takeExact n (x:xs) of
   Just chunk -> chunk : window n xs
   Nothing -> []
 
--- | Returns the maximum of the given list
+-- | Returns Just the maximum of the given list or Nothing if list is empty.
 maxMaybe :: Ord a => [a] -> Maybe a
 maxMaybe = foldr go Nothing
   where
     go :: Ord a => a -> Maybe a -> Maybe a
-    go x y = fmap (max x) y <|> Just x
+    go x m = Just $ foldr max x m
 
 largestProduct :: Int -> String -> Either Error Integer
 largestProduct size digits = do
