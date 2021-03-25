@@ -31,10 +31,16 @@ prependToHead :: a -> [[a]] -> [[a]]
 prependToHead x (p:ps) = (x:p):ps
 prependToHead x [] = [[x]]
 
+-- | Maps a function onto to the head of a list, returning the new list.
+-- Returns Nothing if the list was empty.
+mapHead :: (a -> a) -> [a] -> Maybe [a]
+mapHead f (x:xs) = Just $ f x : xs
+mapHead _ [] = Nothing
+
 -- | Determines whether the partition is non-empty and the first part is a palindrome.
 headIsPalindrome :: Eq a => [[a]] -> Bool
 headIsPalindrome (x:xs) = isPalindrome x
-headIsPalindrome [] = False
+headIsPalindrome [] = True
 
 -- palinPartitions "iiii" = [["i","i","i","i"],["i","i","ii"],["i","ii","i"],["i","iii"],["ii","i","i"],["ii","ii"],["iii","i"],["iiii"]]
 -- palinPartitions "nitin" = [["n", "i", "t", "i", "n"], ["n", "iti", "n"], ["nitin"]]
@@ -47,7 +53,7 @@ palinPartitions = filter headIsPalindrome . go
   where
     go :: String -> [Partition]
     go [] = [[]]
-    go (x:xs) = fmap ([x]:) restValid ++ fmap (prependToHead x) rest
+    go (x:xs) = fmap ([x]:) restValid ++ mapMaybe (mapHead (x:)) rest
       where
         rest = go xs
         restValid = filter headIsPalindrome rest
@@ -73,7 +79,7 @@ palinPartitions' = filter headIsPalindrome . foldr go [[]]
     -- filter on the final result of the fold.
     go :: Char -> [Partition] -> [Partition]
     go c [] = [[[c]]]
-    go c rest = fmap ([c]:) restPalins ++ fmap (prependToHead c) rest
+    go c rest = fmap ([c]:) restPalins ++ mapMaybe (mapHead (c:)) rest
       where
         restPalins = filter headIsPalindrome rest
 
