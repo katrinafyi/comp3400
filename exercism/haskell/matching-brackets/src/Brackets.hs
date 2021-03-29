@@ -50,8 +50,7 @@ matchPairs = go []
 matchPairs' :: Bracket -> [Bracket] -> [Bracket]
 matchPairs' x (y:ys)
   | isPair x y = ys
-  | otherwise = x:y:ys
-matchPairs' x [] = [x]
+matchPairs' x ys = x:ys
 
 arePaired :: String -> Bool
 arePaired = null . foldr matchPairs' [] . mapMaybe toBracket
