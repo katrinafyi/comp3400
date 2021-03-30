@@ -1,4 +1,4 @@
-module Blockus (tile) where
+module Blockus2 (tile) where
 
 import Control.Applicative
 import Data.Foldable (toList)
@@ -86,7 +86,6 @@ instance Functor f => Applicative (Free f) where
   -- liftA2 :: (a -> b -> c) -> Free f a -> Free f b -> Free f c
   -- liftA2 :: (a -> (b -> c)) -> Free f a -> Free f b -> Free f c
   -- (<*>)  :: Free f (a -> b) -> Free f a -> Free f b
-
   Pure x <*> f = x <$> f
   Free x <*> f = Free $ (<*> f) <$> x
 
@@ -100,14 +99,36 @@ instance (Functor f, Foldable f) => Foldable (Free f) where
   foldr f b (Pure x) = f x b
   foldr f b (Free x) = foldr (\fa b' -> foldr f b' fa) b x
 
-data Corner = TopLeft | TopRight | BottomRight | BottomLeft
-  deriving (Eq, Show, Ord, Enum, Bounded)
 
-data Board = Board { boardCorner :: Corner, boardCells :: Free Four (Maybe Int)}
-  deriving (Show)
+-- better expressed as:
+-- mapFree :: (Functor f, Functor g) => (forall b. f b -> g b) -> Free f a -> Free g a
+-- but that would require RankNTypes.
+mapFree :: (Functor f, Functor g) => (f (Free g a) -> g (Free g a)) -> Free f a -> Free g a
+mapFree f = foldFree (Free . f) Pure
+-- mapFree _ (Pure x) = Pure x
+-- mapFree f (Free x) = Free $ f $ mapFree f <$> x
 
+foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
+foldFree f b (Pure x) = b x
+foldFree f b (Free x) = f $ foldFree f b <$> x
 
+hstack :: [[a]] -> [[a]] -> [[a]]
+hstack = zipWith (++)
 
+vstack :: [[a]] -> [[a]] -> [[a]]
+vstack = (++)
+
+fourToList :: Four [[a]] -> [[a]]
+fourToList (Four a b c d) = vstack (hstack a b) (hstack c d)
+
+rotate :: Four a -> Four a
+rotate (Four a b c d) = Four b c d a
+
+y = Free (Four (Pure 1) (Pure 2) (Pure 3) (Pure 4))
+z = Free (Four y (fmap (+4) y) (fmap (+8) y) (fmap (+12) y))
+
+x :: Free Four Int
+x = mapFree rotate $ Free (Four (Pure 1) (Pure 1) (Pure 1) (Pure 1))
 
 tile :: Int -> [[Int]]
 tile = undefined
