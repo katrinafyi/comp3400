@@ -61,6 +61,10 @@ hstack = zipWith (++)
 vstack :: Board a -> Board a -> Board a
 vstack = (++)
 
+-- toList :: Four a -> [[a]]
+-- toList (Leaf a) = [[a]]
+-- toList (Four a b c d) = vstack (hstack (toList a) (toList b)) (hstack (toList c) (toList d))
+
 transpose :: Board a -> Board a
 transpose [] = []
 transpose [[]] = [[]]
@@ -102,9 +106,8 @@ tile :: Int -> Board Int
 tile 0 = [[0]]
 tile n = vstack (hstack topLeft topRight) (hstack bottomLeft bottomRight)
   where (t0:t1:t2:t3:_) = iterate (seqTile (n-1)) (tile (n-1))
-        centre = maxB t3 + 1
+        centre = numTiles n
         topLeft = t0
         topRight = rotateCCW $ setCorner centre t1
         bottomRight = setCorner centre t2
         bottomLeft = rotateCW $ setCorner centre t3
-
