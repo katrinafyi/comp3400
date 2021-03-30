@@ -1,7 +1,5 @@
 module Blockus (tile) where
 
-import Control.Applicative
-
 {-
 *DO NOT* load any modules.
 
@@ -54,44 +52,59 @@ your board satisfies the tiling rather than comparing them with tiled boards.
 [[0,2,3,3],[2,2,1,3],[4,1,1,5],[4,4,5,5]]
 
 -}
-data Orientation = TopLeft
-                 | TopRight
-                 | BottomRight
-                 | BottomLeft
-  deriving (Eq, Show, Ord, Enum, Bounded)
 
--- four-length tuple of identical elements
-data Four a = Four a a a a
+type Board a = [[a]]
 
-data Free f a = Pure a | Free (f (Free f a))
+hstack :: Board a -> Board a -> Board a
+hstack = zipWith (++)
 
-instance Functor Four where
-  fmap f (Four a b c d) = Four (f a) (f b) (f c) (f d)
+vstack :: Board a -> Board a -> Board a
+vstack = (++)
 
-instance Functor f => Functor (Free f) where
-  fmap f (Pure x) = Pure $ f x
-  fmap f (Free x) = Free $ fmap f <$> x
+transpose :: Board a -> Board a
+transpose [] = []
+transpose [[]] = [[]]
+transpose (x:xs) = (corner ++ top) : zipWith (:) left rest
+  where corner = (take 1 . take 1) x
+        top = concatMap (take 1) xs
+        left = drop 1 x
+        rest = transpose $ drop 1 <$> xs
 
-instance Functor f => Applicative (Free f) where
-  pure = Pure
-  -- liftA2 :: (a -> b -> c) -> Free f a -> Free f b -> Free f c
-  -- liftA2 :: (a -> (b -> c)) -> Free f a -> Free f b -> Free f c
-  -- (<*>)  :: Free f (a -> b) -> Free f a -> Free f b
+rotateCW :: Board a -> Board a
+rotateCW = transpose . reverse
 
-  Pure x <*> f = x <$> f
-  Free x <*> f = Free $ (<*> f) <$> x
+rotateCCW :: Board a -> Board a
+rotateCCW = reverse . transpose
 
-instance Functor f => Monad (Free f) where
-  -- (>>=) :: Free f a -> (a -> Free f b) -> Free f b
-  Pure x >>= f = f x
-  Free x >>= f = Free $ (>>= f) <$> x
+mapB :: (a -> b) -> Board a -> Board b
+mapB = fmap . fmap
 
-instance (Functor f, Foldable f) => Foldable (Free f) where
-  -- foldr :: (a -> b -> b) -> b -> Free f a -> b
-  foldr f b (Pure x) = f x b
-  foldr f b (Free x) = foldr (\b -> foldr f b) b x
+foldlB :: (b -> a -> b) -> b -> Board a -> b
+foldlB = foldl . foldl
 
+maxB :: Board Int -> Int
+maxB = foldlB max 0
 
+setCorner :: a -> Board a -> Board a
+setCorner x b = case b of
+  ((_:tops):rest) -> (x:tops) : rest
+  other -> other
 
-tile :: Int -> [[Int]]
-tile = undefined
+numTiles :: Integral n => n -> n
+numTiles 0 = 0
+numTiles n = 4 * numTiles (n-1) + 1
+
+seqTile :: Int -> Board Int -> Board Int
+seqTile n = mapB (+ offset)
+  where offset = numTiles n
+
+tile :: Int -> Board Int
+tile 0 = [[0]]
+tile n = vstack (hstack topLeft topRight) (hstack bottomLeft bottomRight)
+  where (t0:t1:t2:t3:_) = iterate (seqTile (n-1)) (tile (n-1))
+        centre = maxB t3 + 1
+        topLeft = t0
+        topRight = rotateCCW $ setCorner centre t1
+        bottomRight = setCorner centre t2
+        bottomLeft = rotateCW $ setCorner centre t3
+
