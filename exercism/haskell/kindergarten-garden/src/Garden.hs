@@ -73,6 +73,14 @@ notFoldr f b = runIdentity . foldAp f b . fmap Identity
 foldDown :: (Functor f, Foldable f) => (a -> b -> b) -> b -> f [a] -> [b]
 foldDown f b = getZipList . foldAp f b . fmap ZipList
 
+-- sequenceA :: (Traversable t, Applicative f) => t (f a) -> f (t a)
+f4 :: (Monoid (f a), Applicative f, Foldable f, Applicative g) => f (g a) -> g (f a)
+f4 = foldAp (\a fb -> pure a <> fb) mempty
+
+-- traverse :: (Traversable t, Applicative f) => (a -> f b) -> t a -> f (t b)
+t :: (Monoid (f b), Foldable f, Applicative f, Applicative g) => (a -> g b) -> f a -> g (f b)
+t f = f4 . fmap f
+
 -- | Transposes a 2D list (for fun).
 transpose :: [[a]] -> [[a]]
 transpose = foldDown (:) []
