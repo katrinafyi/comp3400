@@ -32,9 +32,8 @@ chunks _ [] = []
 chunks n xs = take n xs : chunks n (drop n xs)
 
 -- | Applies a fold down the columns of a 2D list of lists.
-foldDown :: (a -> b -> b) -> b -> [[a]] -> [b]
-foldDown _ b [] = repeat b
-foldDown f b (a:as) = zipWith f a $ foldDown f b as
+foldDown :: Foldable f => (a -> b -> b) -> b -> f [a] -> [b]
+foldDown f b = foldr (zipWith f) (repeat b)
 
 -- | Transposes a 2D list (for fun).
 transpose :: [[a]] -> [[a]]
