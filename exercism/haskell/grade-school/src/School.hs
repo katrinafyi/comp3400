@@ -2,7 +2,7 @@ module School (School, add, empty, grade, sorted) where
 
 import qualified Data.Map.Lazy as M
 import qualified Data.Set as S
-import           Data.Foldable (Foldable(toList))
+import           Data.Foldable (toList)
 
 type School = M.Map Int (S.Set String)
 
