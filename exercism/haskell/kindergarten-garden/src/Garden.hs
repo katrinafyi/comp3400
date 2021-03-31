@@ -43,6 +43,25 @@ chunks n xs = take n xs : chunks n (drop n xs)
 foldAp :: (Foldable f, Applicative g) => (a -> b -> b) -> b -> f (g a) -> g b
 foldAp f b = foldr (liftA2 f) (pure b)
 
+-- f1 :: (Applicative f, Applicative g) => (a -> f b -> f b) -> b -> g a -> g (f b)
+-- f1 f b ga = liftA2 f ga (f1 f b ga)
+
+f2 :: Monoid (f b) => (Applicative f, Applicative g) => (a -> f b -> f b) -> Identity (g a) -> g (f b)
+f2 f ga = foldAp f mempty ga
+
+f3 :: Monoid (f b) => (Applicative f, Applicative g) => (a -> f b) -> Identity (g a) -> g (f b)
+f3 f ga = foldAp ((<>) . f) mempty ga
+
+-- f4 :: Monoid (f b) => (Applicative f, Applicative g) => (a -> f b) -> g a -> g (f b)
+-- f4 f ga = _ (fmap f ga)
+
+-- f = Identity
+-- b = f b
+-- foldAp :: (Functor f, Applicative g) => (a -> f b -> f b) -> f b -> Identity (g a) -> g (f b)
+-- traverse :: Applicative f => (a -> f b) -> t a -> f (t b)
+notTraverse :: (Monoid (f b), Functor t, Foldable t, Applicative f, Applicative t) => (a -> f b) -> t a -> f (t b)
+notTraverse = undefined
+
 -- We can do interesting things by playing with the Applicative instance.
 
 -- We can recover a normal fold by choosing Identity as the Applicative.
