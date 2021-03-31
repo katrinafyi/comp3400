@@ -5,7 +5,10 @@ module Garden
     ) where
 
 import qualified Data.Map.Strict as M
-import Data.Maybe
+import           Data.Maybe
+import           Control.Applicative
+import           Data.Functor.Identity
+
 
 data Plant = Clover
            | Grass
@@ -32,8 +35,24 @@ chunks _ [] = []
 chunks n xs = take n xs : chunks n (drop n xs)
 
 -- | Applies a fold down the columns of a 2D list of lists.
-foldDown :: Foldable f => (a -> b -> b) -> b -> f [a] -> [b]
-foldDown f b = foldr (zipWith f) (repeat b)
+-- Folds through the outer foldable f, each step applying the given function
+-- through the applicative g.
+-- The applicative instance describes how the current level will be combined
+-- with the result from folding the remainder.
+-- The foldable describes the pattern of the fold.
+foldAp :: (Foldable f, Applicative g) => (a -> b -> b) -> b -> f (g a) -> g b
+foldAp f b = foldr (liftA2 f) (pure b)
+
+-- We can do interesting things by playing with the Applicative instance.
+
+-- We can recover a normal fold by choosing Identity as the Applicative.
+notFoldr :: (Functor f, Foldable f) => (a -> b -> b) -> b -> f a -> b
+notFoldr f b = runIdentity . foldAp f b . fmap Identity
+
+-- We can recover our original foldDown by converting lists to ZipList, since
+-- zipWith f = liftA2 f where liftA2 is from the ZipList instance.
+foldDown :: (Functor f, Foldable f) => (a -> b -> b) -> b -> f [a] -> [b]
+foldDown f b = getZipList . foldAp f b . fmap ZipList
 
 -- | Transposes a 2D list (for fun).
 transpose :: [[a]] -> [[a]]
