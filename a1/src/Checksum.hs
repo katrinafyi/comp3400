@@ -1,4 +1,4 @@
-module Checksum (checkSum, digits, checkDigits) where
+module Checksum (checkSum) where
 
 {--
 A valid credit card number satisfies a property known as a CHECK SUM.
@@ -39,8 +39,9 @@ digits :: Integral a => a -> [a]
 digits n = reverse $ go n
   where
     go :: Integral a => a -> [a]
-    go 0 = []
-    go n = digit : go rest
+    go n
+      | n <= 0 = []
+      | otherwise = digit:go rest
       where
         digit = n `mod` 10
         rest = n `div` 10
@@ -57,7 +58,7 @@ checkDigits ds =
 
 -- | verifies the checksum property for the given number.
 checkSum :: Integer -> Bool
-checkSum n = checkDigits $ digits n
+checkSum = checkDigits . digits
 -- TODO: double check behaviour with 0.
 
 main :: IO ()
