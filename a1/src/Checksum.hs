@@ -64,8 +64,8 @@ checkSum :: Integer -> Bool
 checkSum = checkDigits . digits
 -- TODO: double check behaviour with 0.
 
-main :: IO ()
-main = do
-    print $ checkSum 1234567890123453
-    print $ checkSum 1111111111111111
-    print $ checkSum 0000000000000000
+-- main :: IO ()
+-- main = do
+--     print $ checkSum 1234567890123453
+--     print $ checkSum 1111111111111111
+--     print $ checkSum 0000000000000000
