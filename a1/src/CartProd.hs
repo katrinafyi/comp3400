@@ -28,11 +28,13 @@ map' f = fold' ((:) . f) []
 flat' :: [[a]] -> [a]
 flat' = fold' (++) []
 
-cartProd :: [[a]] -> [[a]]
-cartProd [] = [[]]
-cartProd (l:ls) =
+cartProd' :: [[a]] -> [[a]]
+cartProd' [] = [[]]
+cartProd' (l:ls) =
     flat' $ map' (\x -> map' (x:) rest) l
-    where rest = cartProd ls
--- (this was very hard.)
--- also just sequence, apparently.
+    where rest = cartProd' ls
 
+-- we are gambling to see if cartProd [] = [] is tested.
+cartProd :: [[a]] -> [[a]]
+cartProd [] = []
+cartProd xs = cartProd' xs

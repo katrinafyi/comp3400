@@ -36,23 +36,26 @@ False
 -- | returns a list of digits in the given number, most significant first.
 -- leading 0s are not considered part of the number, so [] is returned for 0.
 digits :: Integral a => a -> [a]
-digits n = reverse $ go n
+digits = reverse . go
   where
     go :: Integral a => a -> [a]
     go n
       | n <= 0 = []
-      | otherwise = digit:go rest
+      | otherwise = digit : go rest
       where
         digit = n `mod` 10
         rest = n `div` 10
+
+-- | Filters the given list by the given predicate on indices.
+filterIndices :: (Int -> Bool) -> [a] -> [a]
+filterIndices f = fmap snd . filter (f . fst) . zip [1..]
 
 -- | verifies the checksum property for the given list of digits.
 checkDigits :: [Integer] -> Bool
 checkDigits ds =
   let
-    withIndices = zip [1..] ds
-    odds = snd <$> filter (odd . fst) withIndices
-    evens = snd <$> filter (even . fst) withIndices
+    odds = filterIndices odd ds
+    evens = filterIndices even ds
   in
     length ds == 16 && (sum odds + 2 * sum evens) `mod` 10 == 0
 
