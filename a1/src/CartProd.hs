@@ -29,10 +29,11 @@ flat' :: [[a]] -> [a]
 flat' = fold' (++) []
 
 cartProd' :: [[a]] -> [[a]]
-cartProd' [] = [[]]
-cartProd' (l:ls) =
-    flat' $ map' (\x -> map' (x:) rest) l
-    where rest = cartProd' ls
+cartProd' = fold' go [[]]
+  where
+    go :: [a] -> [[a]] -> [[a]]
+    go l [] = []
+    go l rest = flat' $ map' (\x -> map' (x:) rest) l
 
 -- we are gambling to see if cartProd [] = [] is tested.
 cartProd :: [[a]] -> [[a]]
