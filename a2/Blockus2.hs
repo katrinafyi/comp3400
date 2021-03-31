@@ -98,6 +98,7 @@ instance (Functor f, Foldable f) => Foldable (Free f) where
   -- foldr :: (a -> b -> b) -> b -> Free f a -> b
   foldr f b (Pure x) = f x b
   foldr f b (Free x) = foldr (\fa b' -> foldr f b' fa) b x
+  -- foldr f b fa = foldFree (\x -> foldr _ _ x) (flip f b) fa
 
 
 -- better expressed as:
