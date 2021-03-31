@@ -1,33 +1,19 @@
 module School (School, add, empty, grade, sorted) where
 
-import           Data.Foldable (toList)
-import           Data.List (sortOn, sort)
-import           Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as N
+import qualified Data.Map.Lazy as M
+import qualified Data.Set as S
+import           Data.Foldable (Foldable(toList))
 
-data Student = Student { studentName :: String, studentGrade :: Int}
-  deriving (Eq, Show)
-
-newtype School = School { roster :: [Student] }
-  deriving (Eq, Show)
+type School = M.Map Int (S.Set String)
 
 add :: Int -> String -> School -> School
-add g n s = School $ Student n g : roster s
+add n = M.insertWith S.union n . S.singleton
 
 empty :: School
-empty = School []
+empty = M.empty
 
 grade :: Int -> School -> [String]
-grade g = sort . fmap studentName . filter ((== g) . studentGrade) . roster
-
-flattenWithKey :: (a -> k) -> (a -> v) -> NonEmpty a -> (k, NonEmpty v)
-flattenWithKey fk fv as = (fk $ N.head as, fmap fv as)
-
-groupWithKey
-  :: Ord k => (a -> k) -> (a -> v) -> [a] -> [(k, NonEmpty v)]
-groupWithKey fk fv =
-  fmap (flattenWithKey fk fv) . N.groupBy (\a b -> fk a == fk b) . sortOn fk
+grade n = toList . M.findWithDefault S.empty n
 
 sorted :: School -> [(Int, [String])]
-sorted s = fmap (sort . toList) <$> grouped
-  where grouped = groupWithKey studentGrade studentName (roster s)
+sorted = M.assocs . M.map toList

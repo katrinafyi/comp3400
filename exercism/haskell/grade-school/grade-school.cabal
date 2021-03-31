@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7e4f62c12c0fdd3e33f44c25c070bfa5bce0ccec9fde41cc746ea8e9a3e9e1ee
+-- hash: f5879fe99588991c22a08e7070c347459b803522bcf2785f7dc3936f9b5ca7e3
 
 name:           grade-school
 version:        1.0.0.4
@@ -20,6 +20,7 @@ library
   ghc-options: -Wall
   build-depends:
       base
+    , containers
   default-language: Haskell2010
 
 test-suite test
@@ -31,6 +32,7 @@ test-suite test
       test
   build-depends:
       base
+    , containers
     , grade-school
     , hspec
   default-language: Haskell2010
