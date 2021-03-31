@@ -17,6 +17,8 @@ EXAMPLE
 [[1, 3, 4], [1, 3, 5], [2, 3, 4], [2, 3, 5]]
 -}
 
+-- import Test.QuickCheck
+
 fold' :: (a -> b -> b) -> b -> [a] -> b
 fold' _ b [] = b
 fold' f b (a:as) = f a $ fold' f b as
@@ -40,3 +42,10 @@ cartProd' = fold' go [[]]
 cartProd :: [[a]] -> [[a]]
 cartProd [] = []
 cartProd xs = cartProd' xs
+
+-- prop_CartProd :: [[Int]] -> Property
+-- prop_CartProd xs = (product $ fmap length xs) <= 100 ==> cartProd' xs == sequence xs
+
+-- main :: IO ()
+-- main = do
+--   quickCheck (noShrinking prop_CartProd)
