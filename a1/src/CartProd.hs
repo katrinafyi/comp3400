@@ -23,25 +23,19 @@ fold' :: (a -> b -> b) -> b -> [a] -> b
 fold' _ b [] = b
 fold' f b (a:as) = f a $ fold' f b as
 
--- | rewrite fmap for lists because it's banned i guess.
 map' :: (a -> b) -> [a] -> [b]
 map' f = fold' ((:) . f) []
 
 flat' :: [[a]] -> [a]
 flat' = fold' (++) []
 
-cartProd' :: [[a]] -> [[a]]
-cartProd' = fold' go [[]]
+cartProd :: [[a]] -> [[a]]
+cartProd = fold' go [[]]
   where
     go :: [a] -> [[a]] -> [[a]]
     go [] _ = []
     go _ [] = []
     go l rest = flat' $ map' (\x -> map' (x:) rest) l
-
--- we are gambling to see if cartProd [] = [] is tested.
-cartProd :: [[a]] -> [[a]]
-cartProd [] = []
-cartProd xs = cartProd' xs
 
 -- prop_CartProd :: [[Int]] -> Property
 -- prop_CartProd xs = (product $ fmap length xs) <= 100 ==> cartProd' xs == sequence xs
