@@ -34,7 +34,6 @@ NOTE:  Feel free to create more functions.
 
 import Data.Functor.Classes
 import Data.List
-import Control.Applicative
 
 data Prop = Var String | And Prop Prop | Or Prop Prop | Not Prop deriving Show
 
@@ -103,39 +102,32 @@ data VarState = VarTrue { var :: Var } | VarFalse { var :: Var }  deriving (Eq, 
 -- surelyFalse are possible states which will make the node false.
 data VarResult = VarResult { surelyTrue :: [VarState], surelyFalse :: [VarState] } deriving (Eq, Show)
 
+intersect' :: Ord a => [a] -> [a] -> [a]
+intersect' [] _ = []
+intersect' _ [] = []
+intersect' (x:xs) (y:ys) = case compare x y of
+  EQ -> x : intersect' xs ys
+  LT -> intersect' xs (y:ys)
+  GT -> intersect' (x:xs) ys
 
-data Literal a = Literal a | Negation a deriving (Eq, Show)
-newtype Conjunct a = Conjunct [a] deriving (Eq, Show)
-newtype Disjunct a = Disjunct [a] deriving (Eq, Show)
+union' :: Ord a => [a] -> [a] -> [a]
+union' [] y = y
+union' x [] = x
+union' (x:xs) (y:ys) = case compare x y of
+  EQ -> x : union' xs ys
+  LT -> x : union' xs (y:ys)
+  GT -> y : union' (x:xs) ys
 
-instance Functor Conjunct where
-  fmap f (Conjunct x) = Conjunct (fmap f x)
-instance Applicative Conjunct where
-  pure x = Conjunct $ pure x
-  liftA2 f (Conjunct x) (Conjunct y) = Conjunct $ liftA2 f x y
+toVarResult :: PropNode VarResult -> VarResult
+toVarResult (NotNode (VarResult t f)) = VarResult f t
+toVarResult (AndNode (VarResult t1 f1) (VarResult t2 f2)) = VarResult (intersect' t1 t2) (union' f1 f2)
+toVarResult (OrNode (VarResult t1 f1) (VarResult t2 f2)) = VarResult (union' t1 t2) (intersect' f1 f2)
 
-instance Functor Disjunct where
-  fmap f (Disjunct x) = Disjunct (fmap f x)
-instance Applicative Disjunct where
-  pure x = Disjunct $ pure x
-  liftA2 f (Disjunct x) (Disjunct y) = Disjunct $ liftA2 f x y
+varToResult :: Var -> VarResult
+varToResult x = VarResult [VarTrue x] [VarFalse x]
 
-type CNF = Conjunct (Disjunct (Literal String))
-
--- https://www.cs.jhu.edu/~jason/tutorials/convert-to-CNF.html
-
-treeToCNF :: PropNode CNF -> CNF
-treeToCNF (NotNode (Conjunct [Disjunct [Literal x]])) = Conjunct [Disjunct [Negation x]]
-treeToCNF (NotNode (Conjunct [Disjunct [Negation x]])) = Conjunct [Disjunct [Literal x]]
-treeToCNF (NotNode (Conjunct (c:cs))) = treeToCNF (OrNode ())
-treeToCNF (AndNode (Conjunct c1) (Conjunct c2)) = Conjunct (c1 ++ c2)
-treeToCNF (OrNode (Conjunct c1) (Conjunct c2)) = mconcat . sequenceA $ Conjunct [c1, c2]
-
-varToCNF :: Var -> CNF
-varToCNF x = Conjunct [Disjunct [Literal x]]
-
-foldToCNF :: PropTree -> CNF
-foldToCNF = foldFree treeToCNF varToCNF
+foldToVarState :: PropTree -> VarResult
+foldToVarState = foldFree toVarResult varToResult
 
 
 x = And (Var "p") (Not $ Var "q")
@@ -144,5 +136,5 @@ t = Or (Var "p") (Not $ Var "p")
 hasDuplicates :: Eq a => [a] -> Bool
 hasDuplicates xs = length xs /= length (nub xs)
 
--- tautology :: Prop -> Bool
--- tautology = hasDuplicates . fmap var . surelyTrue . foldToVarState . toPropTree
+tautology :: Prop -> Bool
+tautology = hasDuplicates . fmap var . surelyTrue . foldToVarState . toPropTree
