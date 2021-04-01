@@ -133,8 +133,15 @@ foldToVarState = foldFree toVarResult varToResult
 x = And (Var "p") (Not $ Var "q")
 t = Or (Var "p") (Not $ Var "p")
 
-hasDuplicates :: Eq a => [a] -> Bool
-hasDuplicates xs = length xs /= length (nub xs)
+c = And (Var "p") (Not $ Var "p")
+
+varEqual :: VarState -> VarState -> Bool
+varEqual x y = var x == var y
 
 tautology :: Prop -> Bool
-tautology = hasDuplicates . fmap var . surelyTrue . foldToVarState . toPropTree
+tautology = any ((> 1) . length)
+  . groupBy varEqual
+  . sortOn var
+  . surelyTrue
+  . foldToVarState
+  . toPropTree
