@@ -1,7 +1,5 @@
 module Blockus2 (tile) where
 
-import Control.Applicative
-import Data.Foldable (toList)
 import Data.Functor.Classes (Show1, liftShowsPrec, showsPrec1)
 
 {-
@@ -150,13 +148,15 @@ tileBoard :: Int -> Board
 tileBoard 0 = Pure 0
 tileBoard n = Free $ Four a b c d
   where
+    -- tiling of top left is just a tiling of a smaller tile.
     a = tileBoard (n-1)
+    -- maximum number in the tiling "a".
+    m = numTiles (n-1)
 
+    -- generate tiles for the other 3 quadrants by incrementing and rotating.
     b = mapFree rotateCCW $ setNum $ fmap (+1*m) a
     c = setNum $ fmap (+2*m) a
     d = mapFree rotateCW $ setNum $ fmap (+3*m) a
-
-    m = numTiles (n-1)
 
     setNum :: Board -> Board
     setNum = setCorner (4*m + 1)
