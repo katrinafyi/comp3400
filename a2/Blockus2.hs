@@ -82,10 +82,6 @@ instance Traversable Four where
   sequenceA (Four a b c d) = Four <$> a <*> b <*> c <*> d
 
 
-fromList :: [a] -> Four a
-fromList [a,b,c,d] = Four a b c d
-fromList _ = error "list does not contain exactly four elements"
-
 
 data Free f a = Pure a | Free (f (Free f a))
 
@@ -97,9 +93,6 @@ instance (Show a, Show1 f) => Show (Free f a) where
 
 -- instance (Show1 f, Show a) => Show (Free f a) where
 --   showsPrec = showsPrec1
-
-
-
 
 instance Functor f => Functor (Free f) where
   fmap f (Pure x) = Pure $ f x
@@ -135,7 +128,6 @@ mapFree f = foldFree (Free . f) Pure
 foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
 foldFree f b (Pure x) = b x
 foldFree f b (Free x) = f $ foldFree f b <$> x
--- foldFree :: Functor f => (f b -> )
 
 x2 = Free $ Four (Pure 1) (Pure 2) (Pure 3) (Pure 4)
 x3 = Free $ Four x2 x2 x2 x2
@@ -146,6 +138,47 @@ g2 :: a -> Four (Free Four a) -> Four (Free Four a)
 g2 z (Four (Pure _) b c d) = Four (Pure z) b c d
 g2 _ x = x
 
+y = Free (Four (Pure 1) (Pure 2) (Pure 3) (Pure 4))
+z = Free (Four y (fmap (+4) y) (fmap (+8) y) (fmap (+12) y))
+
+-- building the board
+
+rotateCCW :: Four a -> Four a
+rotateCCW (Four a b c d) = Four b c d a
+
+rotateCW :: Four a -> Four a
+rotateCW (Four a b c d) = Four d a b c
+
+setCorner :: a -> Free Four a -> Free Four a
+setCorner x (Pure _) = Pure x
+setCorner x (Free (Four a b c d)) = Free $ Four a' b c d
+  where a' = setCorner x a
+-- can this be a lens?
+
+numTiles :: Int -> Int
+numTiles n = (4^n - 1) `div` 3
+-- numTiles 0 = 0
+-- numTiles n = 4 * numTiles (n-1) + 1
+
+type Board = Free Four Int
+
+tileBoard :: Int -> Board
+tileBoard 0 = Pure 0
+tileBoard n = Free $ Four a b c d
+  where
+    a = tileBoard (n-1)
+
+    b = mapFree rotateCCW $ setNum $ fmap (+1*m) a
+    c = setNum $ fmap (+2*m) a
+    d = mapFree rotateCW $ setNum $ fmap (+3*m) a
+
+    m = numTiles (n-1)
+
+    setNum :: Board -> Board
+    setNum = setCorner (4*m + 1)
+
+-- converting to list
+
 hstack :: [[a]] -> [[a]] -> [[a]]
 hstack = zipWith (++)
 
@@ -155,14 +188,13 @@ vstack = (++)
 fourToList :: Four [[a]] -> [[a]]
 fourToList (Four a b c d) = vstack (hstack a b) (hstack c d)
 
-rotate :: Four a -> Four a
-rotate (Four a b c d) = Four b c d a
-
-y = Free (Four (Pure 1) (Pure 2) (Pure 3) (Pure 4))
-z = Free (Four y (fmap (+4) y) (fmap (+8) y) (fmap (+12) y))
-
-x :: Free Four Int
-x = mapFree rotate $ Free (Four (Pure 1) (Pure 1) (Pure 1) (Pure 1))
+boardToList :: Board -> [[Int]]
+boardToList = foldFree fourToList (pure . pure)
 
 tile :: Int -> [[Int]]
-tile = undefined
+tile n
+  | n < 0 = []
+  | otherwise = boardToList $ tileBoard n
+
+x :: Free Four Int
+x = mapFree rotateCW $ Free (Four (Pure 1) (Pure 1) (Pure 1) (Pure 1))
