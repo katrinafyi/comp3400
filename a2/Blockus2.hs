@@ -57,7 +57,7 @@ your board satisfies the tiling rather than comparing them with tiled boards.
 
 -}
 
--- four-length tuple of identical elements
+-- | Homogeneous tuple of exactly four elements.
 data Four a = Four a a a a
 
 instance Show1 Four where
@@ -65,7 +65,6 @@ instance Show1 Four where
     $ showString "Four" . foldr (\a b -> showChar ' ' . showP 11 a . b) id fa
 
 instance (Show a) => Show (Four a) where showsPrec = showsPrec1
-
 
 instance Functor Four where
   fmap f (Four a b c d) = Four (f a) (f b) (f c) (f d)
@@ -82,6 +81,7 @@ instance Traversable Four where
   sequenceA (Four a b c d) = Four <$> a <*> b <*> c <*> d
 
 
+-- Free monad definition and typeclass definitions.
 
 data Free f a = Pure a | Free (f (Free f a))
 
@@ -100,8 +100,6 @@ instance Functor f => Functor (Free f) where
 
 instance Functor f => Applicative (Free f) where
   pure = Pure
-  -- liftA2 :: (a -> b -> c) -> Free f a -> Free f b -> Free f c
-  -- liftA2 :: (a -> (b -> c)) -> Free f a -> Free f b -> Free f c
   -- (<*>)  :: Free f (a -> b) -> Free f a -> Free f b
   Pure x <*> f = x <$> f
   Free x <*> f = Free $ (<*> f) <$> x
@@ -115,33 +113,18 @@ instance (Functor f, Foldable f) => Foldable (Free f) where
   -- foldr :: (a -> b -> b) -> b -> Free f a -> b
   foldr f b (Pure x) = f x b
   foldr f b (Free x) = foldr (\fa b' -> foldr f b' fa) b x
-  -- foldr f b fa = foldFree (\x -> foldr _ _ x) (flip f b) fa
 
 -- better expressed as:
 -- mapFree :: (Functor f, Functor g) => (forall b. f b -> g b) -> Free f a -> Free g a
 -- but that would require RankNTypes.
 mapFree :: (Functor f, Functor g) => (f (Free g a) -> g (Free g a)) -> Free f a -> Free g a
 mapFree f = foldFree (Free . f) Pure
--- mapFree _ (Pure x) = Pure x
--- mapFree f (Free x) = Free $ f $ mapFree f <$> x
 
 foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
 foldFree f b (Pure x) = b x
 foldFree f b (Free x) = f $ foldFree f b <$> x
 
-x2 = Free $ Four (Pure 1) (Pure 2) (Pure 3) (Pure 4)
-x3 = Free $ Four x2 x2 x2 x2
-y2 :: a -> Free Four a -> Free Four a
-y2 z fa = mapFree (g2 z) fa
-
-g2 :: a -> Four (Free Four a) -> Four (Free Four a)
-g2 z (Four (Pure _) b c d) = Four (Pure z) b c d
-g2 _ x = x
-
-y = Free (Four (Pure 1) (Pure 2) (Pure 3) (Pure 4))
-z = Free (Four y (fmap (+4) y) (fmap (+8) y) (fmap (+12) y))
-
--- building the board
+-- Functions to transform Four and the Board.
 
 rotateCCW :: Four a -> Four a
 rotateCCW (Four a b c d) = Four b c d a
@@ -155,12 +138,13 @@ setCorner x (Free (Four a b c d)) = Free $ Four a' b c d
   where a' = setCorner x a
 -- can this be a lens?
 
-numTiles :: Int -> Int
-numTiles n = (4^n - 1) `div` 3
--- numTiles 0 = 0
--- numTiles n = 4 * numTiles (n-1) + 1
+
+-- Tiles the board.
 
 type Board = Free Four Int
+
+numTiles :: Int -> Int
+numTiles n = (4^n - 1) `div` 3
 
 tileBoard :: Int -> Board
 tileBoard 0 = Pure 0
@@ -177,7 +161,7 @@ tileBoard n = Free $ Four a b c d
     setNum :: Board -> Board
     setNum = setCorner (4*m + 1)
 
--- converting to list
+-- Functions for converting a Board to a list of lists.
 
 hstack :: [[a]] -> [[a]] -> [[a]]
 hstack = zipWith (++)
@@ -191,10 +175,10 @@ fourToList (Four a b c d) = vstack (hstack a b) (hstack c d)
 boardToList :: Board -> [[Int]]
 boardToList = foldFree fourToList (pure . pure)
 
+-- Final function.
+
 tile :: Int -> [[Int]]
 tile n
   | n < 0 = []
   | otherwise = boardToList $ tileBoard n
 
-x :: Free Four Int
-x = mapFree rotateCW $ Free (Four (Pure 1) (Pure 1) (Pure 1) (Pure 1))
