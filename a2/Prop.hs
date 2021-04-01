@@ -97,10 +97,10 @@ toPropTree (Or x y) = Free $ OrNode (toPropTree x) (toPropTree y)
 
 type Var = String
 -- | a snapshot of variable states
-data VarState = VarTrue Var | VarFalse Var deriving (Eq, Show, Ord)
--- | forceTrue are possible states which can force the node to true,
--- forceFalse are possible states which will make the node false.
-data VarResult = VarResult { forceTrue :: [VarState], forceFalse :: [VarState] } deriving (Eq, Show)
+data VarState = VarTrue { var :: Var } | VarFalse { var :: Var }  deriving (Eq, Show, Ord)
+-- | surelyTrue are possible states which can force the node to true,
+-- surelyFalse are possible states which will make the node false.
+data VarResult = VarResult { surelyTrue :: [VarState], surelyFalse :: [VarState] } deriving (Eq, Show)
 
 intersect' :: Ord a => [a] -> [a] -> [a]
 intersect' [] _ = []
@@ -118,7 +118,6 @@ union' (x:xs) (y:ys) = case compare x y of
   LT -> x : union' xs (y:ys)
   GT -> y : union' (x:xs) ys
 
-
 toVarResult :: PropNode VarResult -> VarResult
 toVarResult (NotNode (VarResult t f)) = VarResult f t
 toVarResult (AndNode (VarResult t1 f1) (VarResult t2 f2)) = VarResult (intersect' t1 t2) (union' f1 f2)
@@ -127,11 +126,15 @@ toVarResult (OrNode (VarResult t1 f1) (VarResult t2 f2)) = VarResult (union' t1 
 varToResult :: Var -> VarResult
 varToResult x = VarResult [VarTrue x] [VarFalse x]
 
-x = And (Var "p") (Not $ Var "q")
-
 foldToVarState :: PropTree -> VarResult
 foldToVarState = foldFree toVarResult varToResult
 
 
+x = And (Var "p") (Not $ Var "q")
+t = Or (Var "p") (Not $ Var "p")
+
+hasDuplicates :: Eq a => [a] -> Bool
+hasDuplicates xs = length xs /= length (nub xs)
+
 tautology :: Prop -> Bool
-tautology = undefined
+tautology = hasDuplicates . fmap var . surelyTrue . foldToVarState . toPropTree
