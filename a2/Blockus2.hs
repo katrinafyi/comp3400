@@ -2,7 +2,7 @@ module Blockus2 (tile) where
 
 import Control.Applicative
 import Data.Foldable (toList)
-import Data.Functor.Classes (Show1, liftShowsPrec)
+import Data.Functor.Classes (Show1, liftShowsPrec, showsPrec1)
 
 {-
 *DO NOT* load any modules.
@@ -58,13 +58,29 @@ your board satisfies the tiling rather than comparing them with tiled boards.
 -}
 
 -- four-length tuple of identical elements
-data Four a = Four a a a a deriving Show
+data Four a = Four a a a a
+
+instance Show1 Four where
+  liftShowsPrec showP showL p fa = showParen (p > 10)
+    $ showString "Four" . foldr (\a b -> showChar ' ' . showP 11 a . b) id fa
+
+instance (Show a) => Show (Four a) where showsPrec = showsPrec1
+
 
 instance Functor Four where
   fmap f (Four a b c d) = Four (f a) (f b) (f c) (f d)
 
+instance Applicative Four where
+  pure a = Four a a a a
+  Four fa fb fc fd <*> Four a b c d = Four (fa a) (fb b) (fc c) (fd d)
+
 instance Foldable Four where
   foldr f x (Four a b c d) = f a $ f b $ f c $ f d x
+
+instance Traversable Four where
+  -- sequenceA :: Applicative f => Four (f a) -> f (Four a)
+  sequenceA (Four a b c d) = Four <$> a <*> b <*> c <*> d
+
 
 fromList :: [a] -> Four a
 fromList [a,b,c,d] = Four a b c d
@@ -73,9 +89,17 @@ fromList _ = error "list does not contain exactly four elements"
 
 data Free f a = Pure a | Free (f (Free f a))
 
-instance (Foldable f, Show a) => Show (Free f a) where
-  show (Pure x) = "Pure (" ++ show x ++ ")"
-  show (Free x) = "Free (fromList " ++ (show . toList) x ++ ")"
+instance (Show a, Show1 f) => Show (Free f a) where
+  showsPrec p (Pure x) = showParen (p > 10)
+    $ showString "Pure " . showsPrec 11 x
+  showsPrec p (Free fx) = showParen (p > 10)
+    $ showString "Free " . liftShowsPrec showsPrec showList (11) fx
+
+-- instance (Show1 f, Show a) => Show (Free f a) where
+--   showsPrec = showsPrec1
+
+
+
 
 instance Functor f => Functor (Free f) where
   fmap f (Pure x) = Pure $ f x
@@ -100,7 +124,6 @@ instance (Functor f, Foldable f) => Foldable (Free f) where
   foldr f b (Free x) = foldr (\fa b' -> foldr f b' fa) b x
   -- foldr f b fa = foldFree (\x -> foldr _ _ x) (flip f b) fa
 
-
 -- better expressed as:
 -- mapFree :: (Functor f, Functor g) => (forall b. f b -> g b) -> Free f a -> Free g a
 -- but that would require RankNTypes.
@@ -112,6 +135,16 @@ mapFree f = foldFree (Free . f) Pure
 foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
 foldFree f b (Pure x) = b x
 foldFree f b (Free x) = f $ foldFree f b <$> x
+-- foldFree :: Functor f => (f b -> )
+
+x2 = Free $ Four (Pure 1) (Pure 2) (Pure 3) (Pure 4)
+x3 = Free $ Four x2 x2 x2 x2
+y2 :: a -> Free Four a -> Free Four a
+y2 z fa = mapFree (g2 z) fa
+
+g2 :: a -> Four (Free Four a) -> Four (Free Four a)
+g2 z (Four (Pure _) b c d) = Four (Pure z) b c d
+g2 _ x = x
 
 hstack :: [[a]] -> [[a]] -> [[a]]
 hstack = zipWith (++)
