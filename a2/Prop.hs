@@ -32,7 +32,6 @@ False
 NOTE:  Feel free to create more functions.
 --}
 
-import Data.Functor.Classes
 import Data.List
 import Data.Foldable
 
@@ -60,48 +59,21 @@ instance Foldable PropNode where
 data Free f a = Pure a
               | Free (f (Free f a))
 
-instance (Show a, Show1 f) => Show (Free f a) where
-  showsPrec p (Pure x) = showParen (p > 10)
-    $ showString "Pure " . showsPrec 11 x
-  showsPrec p (Free fx) = showParen (p > 10)
-    $ showString "Free " . liftShowsPrec showsPrec showList (11) fx
-
 instance Functor f => Functor (Free f) where
   fmap f (Pure x) = Pure $ f x
   fmap f (Free x) = Free $ fmap f <$> x
-
-instance Functor f => Applicative (Free f) where
-  pure = Pure
-
-  -- (<*>)  :: Free f (a -> b) -> Free f a -> Free f b
-  Pure x <*> f = x <$> f
-  Free x <*> f = Free $ (<*> f) <$> x
-
-instance Functor f => Monad (Free f) where
-  -- (>>=) :: Free f a -> (a -> Free f b) -> Free f b
-  Pure x >>= f = f x
-  Free x >>= f = Free $ (>>= f) <$> x
 
 instance (Functor f, Foldable f) => Foldable (Free f) where
   -- foldr :: (a -> b -> b) -> b -> Free f a -> b
   foldr f b (Pure x) = f x b
   foldr f b (Free x) = foldr (\fa b' -> foldr f b' fa) b x
 
--- better expressed as:
--- mapFree :: (Functor f, Functor g) => (forall b. f b -> g b) -> Free f a -> Free g a
--- but that would require RankNTypes.
-mapFree :: (Functor f, Functor g)
-        => (f (Free g a) -> g (Free g a))
-        -> Free f a
-        -> Free g a
-mapFree f = foldFree (Free . f) Pure
 
 foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
 foldFree f b (Pure x) = b x
 foldFree f b (Free x) = f $ foldFree f b <$> x
 
-newtype Variable = Variable String
-  deriving (Eq, Show)
+newtype Variable = Variable String deriving (Eq, Show)
 
 type PropTree = Free PropNode Variable
 
@@ -111,18 +83,8 @@ toPropTree (Not x) = Free $ NotNode (toPropTree x)
 toPropTree (And x y) = Free $ AndNode (toPropTree x) (toPropTree y)
 toPropTree (Or x y) = Free $ OrNode (toPropTree x) (toPropTree y)
 
-x = And (Var "p") (Not $ Var "q")
-
-t = Or (Var "p") (Not $ Var "p")
-
-c = And (Var "p") (Not $ Var "p")
-
-x2 = Or (And (Var "p") (Not $ Var "q")) (And (Not $ Var "p") (Var "q"))
-
 varsInTree :: PropTree -> [Variable]
 varsInTree = nub . toList
-
-v = varsInTree $ toPropTree x2
 
 newtype TrueVars = TrueVars { trueVars :: [Variable] } deriving (Eq, Show)
 
@@ -151,14 +113,3 @@ falsifiable t = filter evalToFalse . varCombinations . varsInTree $ t
 
 tautology :: Prop -> Bool
 tautology = null . falsifiable . toPropTree
-
-
-
-
-p2 = Or (Var "p") (Var "p")
-z = Or p2 (Not p2)
-
-z2 = Or (Var "p") (Not $ Or (Var "p") (Var "p"))
-
-a1 = Not (Or (Var "p") (Var "q"))
-a2 = And (Not (Var "p")) (Not (Var "q"))
