@@ -35,7 +35,6 @@ NOTE:  Feel free to create more functions.
 import Data.Functor.Classes
 import Data.List
 import Data.Foldable
-import Data.Maybe
 
 data Prop = Var String
           | And Prop Prop
@@ -131,25 +130,29 @@ newtype VarState = VarState { varTuple :: (Variable, Bool) }
 varStates :: Variable -> [VarState]
 varStates v = [VarState (v, False), VarState (v, True)]
 
-varCombinations :: [Variable] -> [[VarState]]
-varCombinations = traverse varStates
+newtype TrueVars = TrueVars { trueVars :: [Variable] } deriving (Eq, Show)
 
-setVar :: [VarState] -> Variable -> Bool
-setVar vars = fromJust . flip lookup (fmap varTuple vars)
--- should never throw in normal execution, but can easily throw if misused.
+powerset :: [a] -> [[a]]
+powerset = foldr (\a b -> fmap (a:) b ++ b) [[]]
+
+varCombinations :: [Variable] -> [TrueVars]
+varCombinations = fmap TrueVars . powerset
+
+setVar :: TrueVars -> Variable -> Bool
+setVar = flip elem . trueVars
 
 evalPropNode :: PropNode Bool -> Bool
 evalPropNode (NotNode x) = not x
 evalPropNode (OrNode x y) = x || y
 evalPropNode (AndNode x y) = x && y
 
-evalPropTree :: [VarState] -> PropTree -> Bool
+evalPropTree :: TrueVars -> PropTree -> Bool
 evalPropTree = foldFree evalPropNode . setVar
 
-falsifiable :: PropTree -> [[VarState]]
+falsifiable :: PropTree -> [TrueVars]
 falsifiable t = filter evalToFalse . varCombinations . varsInTree $ t
   where
-    evalToFalse :: [VarState] -> Bool
+    evalToFalse :: TrueVars -> Bool
     evalToFalse = (== False) . flip evalPropTree t
 
 tautology :: Prop -> Bool
