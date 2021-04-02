@@ -34,19 +34,32 @@ NOTE:  Feel free to create more functions.
 
 import Data.Functor.Classes
 import Data.List
+import Data.Foldable
+import Data.Maybe
 
-data Prop = Var String | And Prop Prop | Or Prop Prop | Not Prop deriving Show
+data Prop = Var String
+          | And Prop Prop
+          | Or Prop Prop
+          | Not Prop
+  deriving Show
 
-
-data PropNode a = AndNode a a | OrNode a a | NotNode a deriving (Show)
+data PropNode a = AndNode a a
+                | OrNode a a
+                | NotNode a
+  deriving (Show)
 
 instance Functor PropNode where
   fmap f (NotNode x) = NotNode (f x)
   fmap f (AndNode x y) = AndNode (f x) (f y)
   fmap f (OrNode x y) = OrNode (f x) (f y)
 
+instance Foldable PropNode where
+  foldr f b (NotNode x) = f x b
+  foldr f b (AndNode x y) = f x $ f y b
+  foldr f b (OrNode x y) = f x $ f y b
 
-data Free f a = Pure a | Free (f (Free f a))
+data Free f a = Pure a
+              | Free (f (Free f a))
 
 instance (Show a, Show1 f) => Show (Free f a) where
   showsPrec p (Pure x) = showParen (p > 10)
@@ -54,15 +67,13 @@ instance (Show a, Show1 f) => Show (Free f a) where
   showsPrec p (Free fx) = showParen (p > 10)
     $ showString "Free " . liftShowsPrec showsPrec showList (11) fx
 
--- instance (Show1 f, Show a) => Show (Free f a) where
---   showsPrec = showsPrec1
-
 instance Functor f => Functor (Free f) where
   fmap f (Pure x) = Pure $ f x
   fmap f (Free x) = Free $ fmap f <$> x
 
 instance Functor f => Applicative (Free f) where
   pure = Pure
+
   -- (<*>)  :: Free f (a -> b) -> Free f a -> Free f b
   Pure x <*> f = x <$> f
   Free x <*> f = Free $ (<*> f) <$> x
@@ -80,70 +91,66 @@ instance (Functor f, Foldable f) => Foldable (Free f) where
 -- better expressed as:
 -- mapFree :: (Functor f, Functor g) => (forall b. f b -> g b) -> Free f a -> Free g a
 -- but that would require RankNTypes.
-mapFree :: (Functor f, Functor g) => (f (Free g a) -> g (Free g a)) -> Free f a -> Free g a
+mapFree :: (Functor f, Functor g)
+        => (f (Free g a) -> g (Free g a))
+        -> Free f a
+        -> Free g a
 mapFree f = foldFree (Free . f) Pure
 
 foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
 foldFree f b (Pure x) = b x
 foldFree f b (Free x) = f $ foldFree f b <$> x
 
-type PropTree = Free PropNode String
+newtype Variable = Variable String
+  deriving (Eq, Show)
+
+type PropTree = Free PropNode Variable
 
 toPropTree :: Prop -> PropTree
-toPropTree (Var x) = Pure x
+toPropTree (Var x) = Pure $ Variable x
 toPropTree (Not x) = Free $ NotNode (toPropTree x)
 toPropTree (And x y) = Free $ AndNode (toPropTree x) (toPropTree y)
 toPropTree (Or x y) = Free $ OrNode (toPropTree x) (toPropTree y)
 
-type Var = String
--- | a snapshot of variable states
-data VarState = VarTrue { var :: Var } | VarFalse { var :: Var }  deriving (Eq, Show, Ord)
--- | surelyTrue are possible states which can force the node to true,
--- surelyFalse are possible states which will make the node false.
-data VarResult = VarResult { surelyTrue :: [VarState], surelyFalse :: [VarState] } deriving (Eq, Show)
-
-intersect' :: Ord a => [a] -> [a] -> [a]
-intersect' [] _ = []
-intersect' _ [] = []
-intersect' (x:xs) (y:ys) = case compare x y of
-  EQ -> x : intersect' xs ys
-  LT -> intersect' xs (y:ys)
-  GT -> intersect' (x:xs) ys
-
-union' :: Ord a => [a] -> [a] -> [a]
-union' [] y = y
-union' x [] = x
-union' (x:xs) (y:ys) = case compare x y of
-  EQ -> x : union' xs ys
-  LT -> x : union' xs (y:ys)
-  GT -> y : union' (x:xs) ys
-
-toVarResult :: PropNode VarResult -> VarResult
-toVarResult (NotNode (VarResult t f)) = VarResult f t
-toVarResult (AndNode (VarResult t1 f1) (VarResult t2 f2)) = VarResult (intersect' t1 t2) (union' f1 f2)
-toVarResult (OrNode (VarResult t1 f1) (VarResult t2 f2)) = VarResult (union' t1 t2) (intersect' f1 f2)
-
-varToResult :: Var -> VarResult
-varToResult x = VarResult [VarTrue x] [VarFalse x]
-
-foldToVarState :: PropTree -> VarResult
-foldToVarState = foldFree toVarResult varToResult
-
-
 x = And (Var "p") (Not $ Var "q")
+
 t = Or (Var "p") (Not $ Var "p")
 
 c = And (Var "p") (Not $ Var "p")
 
 x2 = Or (And (Var "p") (Not $ Var "q")) (And (Not $ Var "p") (Var "q"))
 
-varEqual :: VarState -> VarState -> Bool
-varEqual x y = var x == var y
+varsInTree :: PropTree -> [Variable]
+varsInTree = nub . toList
+
+v = varsInTree $ toPropTree x2
+
+newtype VarState = VarState { varTuple :: (Variable, Bool) }
+  deriving (Eq, Show)
+
+varStates :: Variable -> [VarState]
+varStates v = [VarState (v, False), VarState (v, True)]
+
+varCombinations :: [Variable] -> [[VarState]]
+varCombinations = traverse varStates
+
+setVar :: [VarState] -> Variable -> Bool
+setVar vars = fromJust . flip lookup (fmap varTuple vars)
+-- should never throw in normal execution, but can easily throw if misused.
+
+evalPropNode :: PropNode Bool -> Bool
+evalPropNode (NotNode x) = not x
+evalPropNode (OrNode x y) = x || y
+evalPropNode (AndNode x y) = x && y
+
+evalPropTree :: [VarState] -> PropTree -> Bool
+evalPropTree = foldFree evalPropNode . setVar
+
+falsifiable :: PropTree -> [[VarState]]
+falsifiable t = filter evalToFalse . varCombinations . varsInTree $ t
+  where
+    evalToFalse :: [VarState] -> Bool
+    evalToFalse = (== False) . flip evalPropTree t
 
 tautology :: Prop -> Bool
-tautology = any ((> 1) . length)
-  . groupBy varEqual
-  . sortOn var
-  . surelyTrue
-  . foldToVarState
-  . toPropTree
+tautology = null . falsifiable . toPropTree
