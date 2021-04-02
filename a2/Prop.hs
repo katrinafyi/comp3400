@@ -124,16 +124,10 @@ varsInTree = nub . toList
 
 v = varsInTree $ toPropTree x2
 
-newtype VarState = VarState { varTuple :: (Variable, Bool) }
-  deriving (Eq, Show)
-
-varStates :: Variable -> [VarState]
-varStates v = [VarState (v, False), VarState (v, True)]
-
 newtype TrueVars = TrueVars { trueVars :: [Variable] } deriving (Eq, Show)
 
 powerset :: [a] -> [[a]]
-powerset = foldr (\a b -> fmap (a:) b ++ b) [[]]
+powerset = foldr (\a b -> b ++ fmap (a:) b) [[]]
 
 varCombinations :: [Variable] -> [TrueVars]
 varCombinations = fmap TrueVars . powerset
