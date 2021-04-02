@@ -157,3 +157,14 @@ falsifiable t = filter evalToFalse . varCombinations . varsInTree $ t
 
 tautology :: Prop -> Bool
 tautology = null . falsifiable . toPropTree
+
+
+
+
+p2 = Or (Var "p") (Var "p")
+z = Or p2 (Not p2)
+
+z2 = Or (Var "p") (Not $ Or (Var "p") (Var "p"))
+
+a1 = Not (Or (Var "p") (Var "q"))
+a2 = And (Not (Var "p")) (Not (Var "q"))
