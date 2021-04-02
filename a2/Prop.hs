@@ -135,6 +135,8 @@ t = Or (Var "p") (Not $ Var "p")
 
 c = And (Var "p") (Not $ Var "p")
 
+x2 = Or (And (Var "p") (Not $ Var "q")) (And (Not $ Var "p") (Var "q"))
+
 varEqual :: VarState -> VarState -> Bool
 varEqual x y = var x == var y
 
