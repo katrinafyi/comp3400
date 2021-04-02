@@ -104,10 +104,27 @@ evalPropNode (AndNode x y) = x && y
 evalPropTree :: PropTree -> TrueVars -> Bool
 evalPropTree = flip (foldFree evalPropNode . setVar)
 
-evalsToFalse :: PropTree -> TrueVars -> Bool
+evalsToFalse, evalsToFalse2, evalsToFalse3, evalsToFalse4, evalsToFalse5, evalsToFalse6, e7 :: PropTree -> TrueVars -> Bool
 evalsToFalse = do
   evalWithTree <- evalPropTree
   pure $ not . evalWithTree
+
+evalsToFalse2 = do
+  evalWithTree <- evalPropTree
+  pure $ do
+    x <- evalWithTree
+    pure $ not x
+
+evalsToFalse3 t v = not $ evalPropTree t v
+
+evalsToFalse4 = evalPropTree >>= \x -> pure (not . x)
+evalsToFalse5 = evalPropTree >>= pure . (not .)
+
+evalsToFalse6 = (not .) <$> evalPropTree
+
+e7 = (not .) . evalPropTree
+
+
 
 falsifiable :: PropTree -> [TrueVars]
 falsifiable = do
