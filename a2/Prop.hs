@@ -126,10 +126,20 @@ e7 = (not .) . evalPropTree
 
 
 
-falsifiable :: PropTree -> [TrueVars]
+falsifiable, f' :: PropTree -> [TrueVars]
 falsifiable = do
   evalWithTree <- evalsToFalse
   filter evalWithTree . varCombinations . varsInTree
+
+f' = evalsToFalse >>= \e -> filter e . varCombinations . varsInTree
+-- evalsToFalse :: PropTree -> (TrueVars -> Bool)
+-- e :: (TrueVars -> Bool)
+-- filter e . varCombinations . varsInTree :: PropTree -> ([TrueVars])
+
+-- type M = (->) PropTree
+-- evalsToFalse :: M (TrueVars -> Bool)
+-- e :: (TrueVars -> Bool)
+-- filter e . varCombinations . varsInTree :: M ([TrueVars])
 
 tautology :: Prop -> Bool
 tautology = null . falsifiable . toPropTree
