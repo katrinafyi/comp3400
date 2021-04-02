@@ -56,8 +56,7 @@ instance Foldable PropNode where
   foldr f b (AndNode x y) = f x $ f y b
   foldr f b (OrNode x y) = f x $ f y b
 
-data Free f a = Pure a
-              | Free (f (Free f a))
+data Free f a = Pure a | Free (f (Free f a))
 
 instance Functor f => Functor (Free f) where
   fmap f (Pure x) = Pure $ f x
@@ -102,14 +101,18 @@ evalPropNode (NotNode x) = not x
 evalPropNode (OrNode x y) = x || y
 evalPropNode (AndNode x y) = x && y
 
-evalPropTree :: TrueVars -> PropTree -> Bool
-evalPropTree = foldFree evalPropNode . setVar
+evalPropTree :: PropTree -> TrueVars -> Bool
+evalPropTree = flip (foldFree evalPropNode . setVar)
+
+evalsToFalse :: PropTree -> TrueVars -> Bool
+evalsToFalse = do
+  evalWithTree <- evalPropTree
+  pure $ not . evalWithTree
 
 falsifiable :: PropTree -> [TrueVars]
-falsifiable t = filter evalToFalse . varCombinations . varsInTree $ t
-  where
-    evalToFalse :: TrueVars -> Bool
-    evalToFalse = (== False) . flip evalPropTree t
+falsifiable = do
+  evalWithTree <- evalsToFalse
+  filter evalWithTree . varCombinations . varsInTree
 
 tautology :: Prop -> Bool
 tautology = null . falsifiable . toPropTree
