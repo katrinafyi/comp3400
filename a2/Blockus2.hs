@@ -170,10 +170,25 @@ vstack :: [[a]] -> [[a]] -> [[a]]
 vstack = (++)
 
 fourToList :: Four [[a]] -> [[a]]
-fourToList (Four a b c d) = vstack (hstack a b) (hstack c d)
+fourToList (Four a b c d) = vstack (hstack a b) (hstack d c)
 
-boardToList :: Board -> [[Int]]
+boardToList :: Free Four a -> [[a]]
 boardToList = foldFree fourToList (pure . pure)
+
+leftPad :: Int -> a -> [a] -> [a]
+leftPad n a xs = replicate (n - length xs') a ++ xs
+    where xs' = take n xs
+
+padSpace :: String -> String
+padSpace = leftPad 3 ' '
+
+boardToString :: Show a => Free Four a -> String
+boardToString = unlines . fmap concat . boardToList . fmap (padSpace . show)
+
+showBoard :: Show a => Free Four a -> IO ()
+showBoard = putStr . boardToString
+
+-- t = tileBoard 2
 
 -- Final function.
 
