@@ -40,10 +40,10 @@ True
 --}
 
 import Data.Maybe (mapMaybe)
+import Data.List (elemIndex)
 
 canonical :: Eq a => [a] -> [Int]
-canonical xs = mapMaybe (flip lookup indices) xs
-    where indices = zip xs [1..]
+canonical xs = mapMaybe (flip elemIndex xs) xs
 
 wordPattern :: String -> [String] -> Bool
 wordPattern xs ys = canonical xs == canonical ys
