@@ -36,8 +36,8 @@ import Data.List
 import Data.Foldable
 
 data Prop = Var String
-          | And Prop Prop
-          | Or Prop Prop
+          | Prop `And` Prop
+          | Prop `Or` Prop
           | Not Prop
   deriving Show
 
@@ -143,3 +143,23 @@ f' = evalsToFalse >>= \e -> filter e . varCombinations . varsInTree
 
 tautology :: Prop -> Bool
 tautology = null . falsifiable . toPropTree
+
+debugProp :: Prop -> IO ()
+debugProp p = do
+  let t = toPropTree p
+  let vars = varCombinations . varsInTree $ t
+  let results = evalPropTree t <$> vars
+  let pairs = zip results vars
+  print p
+  putStr $ unlines $ fmap show pairs
+
+infixl 4 `And`
+infixl 3 `Or`
+infixr 2 ==>
+infixl 1 <=>
+
+(==>) :: Prop -> Prop -> Prop
+p ==> q = Not p `Or` q
+
+(<=>) :: Prop -> Prop -> Prop
+p <=> q = (p ==> q) `And` (q ==> p)
