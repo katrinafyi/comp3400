@@ -35,7 +35,7 @@ cartProd = fold' go [[]]
     go :: [a] -> [[a]] -> [[a]]
     go [] _ = []
     go _ [] = []
-    go l rest = flat' $ map' (\x -> map' (x:) rest) l
+    go l rest = l >>= \x -> map' (x:) rest
 
 -- prop_CartProd :: [[Int]] -> Property
 -- prop_CartProd xs = (product $ fmap length xs) <= 100 ==> cartProd' xs == sequence xs
