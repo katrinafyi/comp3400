@@ -141,7 +141,7 @@ setCorner x (Free (Four a b c d)) = Free $ Four a' b c d
 
 type Board = Free Four Int
 
-numTiles :: Int -> Int
+numTiles :: Integral a => a -> a
 numTiles n = (4^n - 1) `div` 3
 
 tileBoard :: Int -> Board
