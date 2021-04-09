@@ -36,8 +36,8 @@ import Data.List
 import Data.Foldable
 
 data Prop = Var String
-          | Prop `And` Prop
-          | Prop `Or` Prop
+          | And Prop Prop
+          | Or Prop Prop
           | Not Prop
   deriving Show
 
@@ -153,13 +153,13 @@ debugProp p = do
   print p
   putStr $ unlines $ fmap show pairs
 
-infixl 4 `And`
-infixl 3 `Or`
+-- infixl 4 `And`
+-- infixl 3 `Or`
 infixr 2 ==>
 infixl 1 <=>
 
 (==>) :: Prop -> Prop -> Prop
-p ==> q = Not p `Or` q
+p ==> q = Or (Not p) q
 
 (<=>) :: Prop -> Prop -> Prop
-p <=> q = (p ==> q) `And` (q ==> p)
+p <=> q = And (p ==> q) (q ==> p)
