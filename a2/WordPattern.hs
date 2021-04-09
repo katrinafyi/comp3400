@@ -39,11 +39,10 @@ True
 
 --}
 
-import Data.Maybe (mapMaybe)
 import Data.List (elemIndex)
 
-canonical :: Eq a => [a] -> [Int]
-canonical xs = mapMaybe (flip elemIndex xs) xs
+canonical :: Eq a => [a] -> [Maybe Int]
+canonical = fmap <$> flip elemIndex <*> id
 
 wordPattern :: String -> [String] -> Bool
 wordPattern xs ys = canonical xs == canonical ys
