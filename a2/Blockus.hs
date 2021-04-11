@@ -1,4 +1,4 @@
-module Blockus2 (tile) where
+module Blockus (tile) where
 
 import Data.Functor.Classes (Show1, liftShowsPrec, showsPrec1)
 
