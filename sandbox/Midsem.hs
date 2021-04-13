@@ -4,6 +4,7 @@ import Data.Maybe ( isJust )
 import Data.Either (fromLeft)
 import Data.Ord
 import Control.Applicative
+import Data.Monoid
 
 -- q5
 
@@ -111,12 +112,14 @@ f6 = foldAp (||) False [isJoker, isAce]
 -- what if we had a -> [Bool] instead? can we do that?
 
 -- of course we can. in fact, there is a very familiar prelude function to do it.
-g1 :: Card -> [Bool]
-g1 = sequence [isJoker, isAce]
+g1, g2 :: Card -> [Bool]
+g1 = sequenceA [isJoker, isAce]
+
+g2 = ([isJoker, isAce] <*>) . pure
 
 -- now, we have a list of Bool so we can just use or.
 f7 :: Card -> Bool
-f7 = or . sequence [isJoker, isAce]
+f7 = getAny . foldMap Any . sequence [isJoker, isAce]
 
 -- and we'll leave it at that.
 
