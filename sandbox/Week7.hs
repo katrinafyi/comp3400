@@ -29,7 +29,7 @@ ex2'' :: (a -> b) -> ((a -> c) -> c) -> ((b -> c) -> c)
 ex2'' a b = getOp $ contramap Op $ f2 a (Op getOp C.. Op b)
 
 type a |*| b = (a, b)
-dattype a |+| b = Either a b
+type a |+| b = Either a b
 
 infixl 8 |*|
 infixl 7 |+|
