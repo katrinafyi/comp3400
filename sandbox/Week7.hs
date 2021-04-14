@@ -28,19 +28,19 @@ f2 = contramap . contramap
 ex2'' :: (a -> b) -> ((a -> c) -> c) -> ((b -> c) -> c)
 ex2'' a b = getOp $ contramap Op $ f2 a (Op getOp C.. Op b)
 
-data a |*| b = Prod a b deriving (Show)
-data a |+| b = Sum1 a | Sum2 b deriving (Show)
+type a |*| b = (a, b)
+dattype a |+| b = Either a b
 
 infixl 8 |*|
 infixl 7 |+|
 
 ex3 :: a |*| (b |+| c) -> (a |*| b) |+| (a |*| c)
-ex3 (Prod a (Sum1 b)) = Sum1 (Prod a b)
-ex3 (Prod a (Sum2 c)) = Sum2 (Prod a c)
+ex3 (a, Left b) = Left (a, b)
+ex3 (a, Right c) = Right (a, c)
 
 ex4 :: (a |*| b) |+| (a |*| c) -> a |*| (b |+| c)
-ex4 (Sum1 (Prod a b)) = Prod a (Sum1 b)
-ex4 (Sum2 (Prod a c)) = Prod a (Sum2 c)
+ex4 (Left (a, b)) = (a, (Left b))
+ex4 (Right (a, c)) = (a, (Right c))
 
 -- x ^ (a + b) = (x ^ a) ^ b
 
@@ -64,17 +64,23 @@ arithmetic      types       logic
 0               void        False (_|_)
 -}
 
-data a |^| b = Pow { getPow :: (b -> a) }
+type a |^| b = b -> a
 
 ex5 :: c |^| (a |*| b) -> (c |^| a) |^| b
-ex5 (Pow f) = Pow (\b -> Pow (\a -> f (Prod a b)))
+ex5 f = \b a -> f (a, b)
 
 ex5' :: ((a, b) -> c) -> (b -> a -> c)
 ex5' = flip . curry
 -- of course, we have an isomorphism from (a,b) to (b,a). this is swap.
 
 ex6 :: x |^| a |*| x |^| b -> x |^| (a |+| b)
-ex6 (Prod (Pow ax) (Pow bx)) = Pow $
-    \ab -> case ab of
-        Sum1 a -> ax a
-        Sum2 b -> bx b
+ex6 (ax, bx) = \ab -> case ab of
+        Left a -> ax a
+        Right b -> bx b
+
+{-
+x ^ 0 = 1
+x ^ 1 = x
+x + 0 = x
+x * 1 = x
+-}
