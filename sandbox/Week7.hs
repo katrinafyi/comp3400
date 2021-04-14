@@ -78,9 +78,20 @@ ex6 (ax, bx) = \ab -> case ab of
         Left a -> ax a
         Right b -> bx b
 
+data NotList a = NotList (() |+| a |*| NotList a)
+-- L = 1 + a L
+-- d/da (1 + a + a^2 + ...) = 1 + 2a + 3a^2 + 4a^3 + ...
+
+toList :: NotList a -> [a]
+toList (NotList (Left ())) = []
+toList (NotList (Right (a, x))) = a : toList x
+
+-- [a] ~= x^i
+
 {-
-x ^ 0 = 1
-x ^ 1 = x
+x ^ 0 = 1   Void -> x = absurd
+x ^ 1 = x   () -> x
 x + 0 = x
 x * 1 = x
 -}
+
