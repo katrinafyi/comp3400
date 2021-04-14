@@ -1,6 +1,7 @@
 module Series (Error(..), largestProduct) where
 
 import Data.Foldable (foldl')
+import Data.List.NonEmpty (nonEmpty)
 
 data Error = InvalidSpan
            | InvalidDigit Char
@@ -41,10 +42,11 @@ window n (x:xs) = case takeExact n (x:xs) of
 
 -- | Returns Just the maximum of the given list or Nothing if list is empty.
 maxMaybe :: Ord a => [a] -> Maybe a
-maxMaybe = foldl' go Nothing
-  where
-    go :: Ord a => Maybe a -> a -> Maybe a
-    go m x = Just $ foldl' max x m
+maxMaybe = fmap maximum . nonEmpty
+-- maxMaybe = foldl' go Nothing
+--   where
+--     go :: Ord a => Maybe a -> a -> Maybe a
+--     go m x = Just $ foldl' max x m
 
 largestProduct :: Int -> String -> Either Error Integer
 largestProduct size digits = do
@@ -53,3 +55,4 @@ largestProduct size digits = do
     Just maxProd -> Right maxProd
     Nothing      -> Left InvalidSpan
 -- ass.
+-- no u
