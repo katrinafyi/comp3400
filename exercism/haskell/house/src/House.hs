@@ -1,6 +1,8 @@
 module House (rhyme) where
 
 import           Data.List (intercalate, tails)
+import           Data.Bifunctor (Bifunctor(bimap))
+import           Control.Arrow ((***), (<<<))
 
 data RhymeItem = RhymeItem { rhymeVerb :: String, rhymeThing :: String }
   deriving (Eq, Show)
@@ -20,12 +22,15 @@ rhymeItems =
   , RhymeItem "ate" "the malt"
   , RhymeItem "lay in" "the house that Jack built."]
 
+rhymeThisLine :: RhymeItem -> String
+rhymeThisLine = ("This is " ++) . rhymeThing
+
 rhymeThatLine :: RhymeItem -> String
 rhymeThatLine = ("that " ++) . unwords . sequence [rhymeVerb, rhymeThing]
 
 rhymeSection :: [RhymeItem] -> [String]
-rhymeSection [] = []
-rhymeSection (x:xs) = ("This is " ++ rhymeThing x) : fmap rhymeThatLine xs
+rhymeSection =
+  uncurry (++) <<< fmap rhymeThisLine *** fmap rhymeThatLine <<< splitAt 1
 
 makeRhyme :: [RhymeItem] -> String
 makeRhyme = unlines
