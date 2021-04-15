@@ -1,7 +1,6 @@
 module House (rhyme) where
 
 import           Data.List (intercalate, tails)
-import           Data.Bifunctor (Bifunctor(bimap))
 import           Control.Arrow ((***), (<<<))
 
 data RhymeItem = RhymeItem { rhymeVerb :: String, rhymeThing :: String }
