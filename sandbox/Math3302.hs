@@ -1,5 +1,9 @@
 module Math3302 where
 
+import Data.Maybe
+import Data.List.NonEmpty(NonEmpty, nonEmpty)
+import qualified Data.List.NonEmpty as N
+import Data.Char (ord, chr)
 n :: Int
 n = 8
 
@@ -29,3 +33,33 @@ s' d = filter ((<= d) . distance w) words'
 
 sum' :: Int -> Int
 sum' d = sum $ (\k -> (a-1)^k * binom n k) <$> [0..d]
+
+infixl 7 %
+(%) :: Integral a => a -> a -> a
+(%) = mod
+
+modInvs :: Integral a => a -> a -> [a]
+n `modInvs` d = filter (\x -> x*n `mod` d == 1) [0..d]
+
+getSingleton :: [a] -> Maybe a
+getSingleton [x] = Just x
+getSingleton _ = Nothing
+
+modInv :: (Show a, Integral a) => a -> a -> a
+n `modInv` d =
+  fromMaybe (error $ show n ++ " has multiple inverses modulo " ++ show d)
+  $ getSingleton
+  $ N.toList
+  $ fromMaybe (error $ show n ++ " has no inverses modulo " ++ show d)
+  $ nonEmpty
+  $ modInvs n d
+
+infixl 8 %-
+(%-) :: (Show a, Integral a) => a -> a -> a
+(%-) = modInv
+
+toZ26 :: String -> [Int]
+toZ26 = fmap (subtract (ord 'A') . ord)
+
+fromZ26 :: [Int] -> String
+fromZ26 = fmap (chr . (+ ord 'a') . (`mod` 26))
