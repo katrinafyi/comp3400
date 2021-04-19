@@ -32,7 +32,7 @@ digitToBased (Base b) n
 listToBased :: Integral a => Base a -> [a] -> BasedEither a (Based a)
 listToBased b = fmap (Based b) . traverse (digitToBased b)
 
-multAdd :: Integral a => a -> a -> a -> a
+multAdd :: Num a => a -> a -> a -> a
 multAdd b q r = q * b + r
 
 basedToNum :: Integral a => Based a -> a
