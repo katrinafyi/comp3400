@@ -1,6 +1,6 @@
 module Series (Error(..), largestProduct) where
 
-import           Data.Foldable (foldl', Foldable(foldMap'))
+import           Data.Foldable (Foldable(foldMap'))
 import           Data.Semigroup (Max(Max))
 
 data Error = InvalidSpan
