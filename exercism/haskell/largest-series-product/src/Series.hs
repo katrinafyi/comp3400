@@ -1,7 +1,7 @@
 module Series (Error(..), largestProduct) where
 
-import Data.Foldable (foldl')
-import Data.List.NonEmpty (nonEmpty)
+import           Data.Foldable (foldl', Foldable(foldMap'))
+import           Data.Semigroup (Max(Max))
 
 data Error = InvalidSpan
            | InvalidDigit Char
@@ -38,21 +38,11 @@ window 0 _ = [[]]
 window _ [] = []
 window n (x:xs) = case takeExact n (x:xs) of
   Just chunk -> chunk : window n xs
-  Nothing -> []
-
--- | Returns Just the maximum of the given list or Nothing if list is empty.
-maxMaybe :: Ord a => [a] -> Maybe a
-maxMaybe = fmap maximum . nonEmpty
--- maxMaybe = foldl' go Nothing
---   where
---     go :: Ord a => Maybe a -> a -> Maybe a
---     go m x = Just $ foldl' max x m
+  Nothing    -> []
 
 largestProduct :: Int -> String -> Either Error Integer
 largestProduct size digits = do
   ns <- traverse toDigit digits
-  case maxMaybe $ foldl' (*) 1 <$> window size ns of
-    Just maxProd -> Right maxProd
+  case foldMap' (Just . Max) . fmap product . window size $ ns of
+    Just (Max x) -> Right x
     Nothing      -> Left InvalidSpan
--- ass.
--- no u
