@@ -17,8 +17,8 @@ newtype Base a = Base a
 data Based a = Based { base :: Base a, coeffs :: [a] }
   deriving (Show, Eq)
 
-liftBased :: ([a] -> [a]) -> Based a -> Based a
-liftBased f (Based b ns) = Based b (f ns)
+mapCoeffs :: ([a] -> [a]) -> Based a -> Based a
+mapCoeffs f (Based b ns) = Based b (f ns)
 
 type BasedEither a b = Either (Error a) b
 
@@ -42,7 +42,7 @@ basedToNum = foldl' <$> go . base <*> const 0 <*> coeffs
     go (Base b') rest n = b' * rest + n
 
 numToBased :: Integral a => Base a -> a -> Based a
-numToBased b = liftBased reverse . Based b . unfoldr (go b)
+numToBased b = mapCoeffs reverse . Based b . unfoldr (go b)
   where
     go :: Integral a => Base a -> a -> Maybe (a, a)
     go _ 0 = Nothing
