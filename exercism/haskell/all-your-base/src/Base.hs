@@ -35,11 +35,11 @@ digitToBased (Base b) n
 listToBased :: Integral a => Base a -> [a] -> BasedEither a (Based a)
 listToBased b = fmap (Based b) . traverse (digitToBased b)
 
+unQuotRem :: Integral a => a -> a -> a -> a
+unQuotRem b q r = q * b + r
+
 basedToNum :: Integral a => Based a -> a
-basedToNum = foldl' <$> go . base <*> const 0 <*> coeffs
-  where
-    go :: Integral a => Base a -> a -> a -> a
-    go (Base b') rest n = b' * rest + n
+basedToNum (Based (Base b) cs) = foldl' (unQuotRem b) 0 cs
 
 numToBased :: Integral a => Base a -> a -> Based a
 numToBased b = mapCoeffs reverse . Based b . unfoldr (go b)
