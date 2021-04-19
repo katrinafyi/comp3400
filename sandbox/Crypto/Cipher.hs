@@ -73,19 +73,25 @@ type PlainText = [PlainLetter]
 class Cipher a where
   encode :: a -> PlainText -> CipherText a
   decode :: a -> CipherText a -> PlainText
+
   default encode :: Monoalphabetic a => a -> PlainText -> CipherText a
-  encode = fmap . monoEncode
+  encode c = fmap (monoEncode c . CipherLetter . getPlainLetter)
 
   default decode :: Monoalphabetic a => a -> CipherText a -> PlainText
-  decode = fmap . monoDecode
+  decode c = fmap (PlainLetter . getCipherLetter . monoDecode c)
 
 class Cipher a => Monoalphabetic a where
-  monoEncode :: a -> PlainLetter -> CipherLetter a
-  monoDecode :: a -> CipherLetter a -> PlainLetter
+  monoEncode :: a -> CipherLetter b -> CipherLetter (b, a)
+  monoDecode :: a -> CipherLetter (b, a) -> CipherLetter b
 
 class Cipher a => Polyalphabetic a where
   polyEncode :: a -> PlainText -> CipherText a
   polyDecode :: a -> CipherText a -> PlainText
+
+data IdentityCipher = IdentityCipher deriving (Show)
+instance Cipher IdentityCipher where
+  encode _ = coerce id
+  decode _ = coerce id
 
 data AffineCipher = AffineCipher { affineMult :: Int, affineShift :: Int }
   deriving (Show)
@@ -93,10 +99,9 @@ data AffineCipher = AffineCipher { affineMult :: Int, affineShift :: Int }
 instance Cipher AffineCipher
 
 instance Monoalphabetic AffineCipher where
-  monoEncode (AffineCipher a b) (PlainLetter x) = cipherLetter $ a * x + b
+  monoEncode (AffineCipher a b) (CipherLetter x) = cipherLetter $ a * x + b
 
-  monoDecode (AffineCipher a b) (CipherLetter y) = plainLetter
-    $ a \% 26 * (y - b)
+  monoDecode (AffineCipher a b) (CipherLetter y) = CipherLetter $ a \% 26 * (y - b)
 
 data ViginereKey
 
