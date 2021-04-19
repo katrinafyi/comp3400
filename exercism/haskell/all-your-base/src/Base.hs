@@ -17,9 +17,6 @@ newtype Base a = Base a
 data Based a = Based { base :: Base a, coeffs :: [a] }
   deriving (Show, Eq)
 
-mapCoeffs :: ([a] -> [a]) -> Based a -> Based a
-mapCoeffs f (Based b ns) = Based b (f ns)
-
 type BasedEither a b = Either (Error a) b
 
 toBase :: Integral a => a -> Maybe (Base a)
@@ -35,14 +32,14 @@ digitToBased (Base b) n
 listToBased :: Integral a => Base a -> [a] -> BasedEither a (Based a)
 listToBased b = fmap (Based b) . traverse (digitToBased b)
 
-unQuotRem :: Integral a => a -> a -> a -> a
-unQuotRem b q r = q * b + r
+multAdd :: Integral a => a -> a -> a -> a
+multAdd b q r = q * b + r
 
 basedToNum :: Integral a => Based a -> a
-basedToNum (Based (Base b) cs) = foldl' (unQuotRem b) 0 cs
+basedToNum (Based (Base b) cs) = foldl' (multAdd b) 0 cs
 
 numToBased :: Integral a => Base a -> a -> Based a
-numToBased b = mapCoeffs reverse . Based b . unfoldr (go b)
+numToBased b = Based b . reverse .  unfoldr (go b)
   where
     go :: Integral a => Base a -> a -> Maybe (a, a)
     go _ 0 = Nothing
