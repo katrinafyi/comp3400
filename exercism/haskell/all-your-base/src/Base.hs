@@ -1,7 +1,6 @@
 module Base (Error(..), rebase) where
 
 import           Data.Foldable (Foldable(foldl'))
-import           Data.Maybe (fromMaybe)
 import           Data.List (unfoldr)
 import           Data.Tuple (swap)
 
@@ -40,17 +39,17 @@ basedToNum :: Integral a => Based a -> a
 basedToNum = foldl' <$> go . base <*> const 0 <*> coeffs
   where
     go :: Integral a => Base a -> a -> a -> a
-    go (Base b) rest n = b * rest + n
+    go (Base b') rest n = b' * rest + n
 
 numToBased :: Integral a => Base a -> a -> Based a
 numToBased b = liftBased reverse . Based b . unfoldr (go b)
   where
     go :: Integral a => Base a -> a -> Maybe (a, a)
     go _ 0 = Nothing
-    go (Base b) n = Just $ swap (n `quotRem` b)
+    go (Base b') n = Just $ swap (n `quotRem` b')
 
 maybeToEither :: a -> Maybe b -> Either a b
-maybeToEither a (Just b) = Right b
+maybeToEither _ (Just b) = Right b
 maybeToEither a Nothing = Left a
 
 rebase :: Integral a => a -> a -> [a] -> BasedEither a [a]
