@@ -46,8 +46,7 @@ numToBased b = Based b . reverse .  unfoldr (go b)
     go (Base b') n = Just $ swap (n `quotRem` b')
 
 maybeToEither :: a -> Maybe b -> Either a b
-maybeToEither _ (Just b) = Right b
-maybeToEither a Nothing = Left a
+maybeToEither a = maybe (Left a) Right
 
 rebase :: Integral a => a -> a -> [a] -> BasedEither a [a]
 rebase inputBase outputBase inputDigits = do
