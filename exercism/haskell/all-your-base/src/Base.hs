@@ -3,6 +3,8 @@ module Base (Error(..), rebase) where
 import Data.Functor.Identity
 import Data.Foldable (Foldable(foldl'))
 import Data.Maybe (fromMaybe)
+import Data.List (unfoldr)
+import Data.Tuple (swap)
 
 data Error a = InvalidInputBase | InvalidOutputBase | InvalidDigit a
     deriving (Show, Eq)
@@ -19,8 +21,8 @@ type BasedEither a b = Either (Error a) b
 
 toBase :: Integral a => a -> Maybe (Base a)
 toBase b
-    | b <= 0 = Nothing
-    | otherwise = Just (Base b)
+    | b > 1 = Just (Base b)
+    | otherwise = Nothing
 
 digitToBased :: Integral a => Base a -> a -> BasedEither a a
 digitToBased (Base b) n
@@ -36,10 +38,10 @@ basedToNum = foldl' <$> go . base <*> const 0 <*> coeffs
           go (Base b) rest n = b * rest + n
 
 numToBased :: Integral a => Base a -> a -> Based a
-numToBased (Base b) n
-    | n == 0 = Based (Base b) []
-    | otherwise = liftBased (r:) (numToBased (Base b) q)
-    where (q,r) = n `quotRem` b
+numToBased b = liftBased reverse . Based b . unfoldr (go b)
+    where go :: Integral a => Base a -> a -> Maybe (a, a)
+          go _ 0 = Nothing
+          go (Base b) n = Just $ swap (n `quotRem` b)
 
 rebase :: Integral a => a -> a -> [a] -> BasedEither a [a]
 rebase inputBase outputBase inputDigits = do
