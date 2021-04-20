@@ -30,7 +30,9 @@ digitToBased (Base b) n
   | otherwise = Left (InvalidDigit n)
 
 digitsToBased :: Integral a => Base a -> [a] -> BasedEither a (Based a)
-digitsToBased b = fmap (Based b . reverse) . traverse (digitToBased b)
+digitsToBased b =
+  fmap (Based b . reverse . dropWhile (== 0))
+  . traverse (digitToBased b)
 
 basedToDigits :: Integral a => Based a -> [a]
 basedToDigits = reverse . coeffs
