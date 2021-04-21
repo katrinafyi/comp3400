@@ -3,7 +3,9 @@ module Base (Error(..), rebase) where
 import           Data.Foldable (Foldable(foldr'))
 import           Data.List (unfoldr)
 import           Data.Tuple (swap)
-import Control.Applicative (liftA2)
+import           Control.Applicative (liftA2)
+import           Data.Void (Void, absurd)
+
 
 data Error a = InvalidInputBase
              | InvalidOutputBase
@@ -70,3 +72,31 @@ foo g f b = foldAp f b . fmap g
 
 b :: Base Integer
 b = Base 10
+
+{-
+x^0 = 1
+x^Void = 1
+Void -> x
+
+a -> Void
+
+0^A = 0
+-}
+
+g :: (a, a -> Void) -> Void
+g (a, fa) = fa a
+
+h :: a -> (a -> Void) -> Void
+h a fa = fa a
+
+-- f :: Void -> a
+-- f a = case a of ()
+
+type Not a = a -> Void
+
+-- 0 ^ (p^(0^p) + (0^p)^p)
+-- t7 :: (p -> (p -> Void)) -> ((p -> Void) -> p) -> Void
+t7 :: (p -> (p -> Void)) -> ((p -> Void) -> p) -> Void
+t7 f g = p2v p
+  where p2v = \p -> f p p
+        p = g p2v
