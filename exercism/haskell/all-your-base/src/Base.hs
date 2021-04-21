@@ -3,6 +3,7 @@ module Base (Error(..), rebase) where
 import           Data.Foldable (Foldable(foldr'))
 import           Data.List (unfoldr)
 import           Data.Tuple (swap)
+import Control.Applicative (liftA2)
 
 data Error a = InvalidInputBase
              | InvalidOutputBase
@@ -59,3 +60,13 @@ rebase inputBase outputBase inputDigits = do
   o <- maybeToEither InvalidOutputBase $ toBase outputBase
   based <- digitsToBased i inputDigits
   pure $ basedToDigits . numToBased o . basedToNum $ based
+
+
+foldAp :: (Foldable t, Applicative f) => (a -> b -> b) -> b -> t (f a) -> f b
+foldAp f b = foldr (liftA2 f) (pure b)
+
+foo :: Monad m => (c -> m a) -> (a -> b -> b) -> b -> [c] -> m b
+foo g f b = foldAp f b . fmap g
+
+b :: Base Integer
+b = Base 10
