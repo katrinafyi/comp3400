@@ -123,8 +123,5 @@ foldMaxPath :: (Ord a, Semigroup a) => TreeF a (MaxPath a) -> MaxPath a
 foldMaxPath (LeafF x) = singletonPath x
 foldMaxPath (NodeF l x r) = joinPaths x l r
 
-maxPath' :: (Ord a, Semigroup a) => Tree a -> MaxPath a
-maxPath' = cataTree foldMaxPath
-
 maxPath :: Tree Int -> Int
-maxPath = getSum . getMaxPath . maxPath' . fmap Sum
+maxPath = getSum . getMaxPath . cataTree foldMaxPath . fmap Sum
