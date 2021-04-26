@@ -154,7 +154,7 @@ data MaxPath a = MaxPath { openPath :: a, closedPath :: a }
   deriving Show
 
 instance (Ord a, Semigroup a) => Semigroup (MaxPath a) where
-  (MaxPath x1 x2) <> (MaxPath y1 y2) =
+  MaxPath x1 x2 <> MaxPath y1 y2 =
     MaxPath (max x1 y1) (max (x1 <> y1) $ max x2 y2)
 
 instance (Ord a, Monoid a) => Monoid (MaxPath a) where
@@ -162,7 +162,7 @@ instance (Ord a, Monoid a) => Monoid (MaxPath a) where
 
 infixr 4 +:
 (+:) :: (Ord a, Semigroup a) => a -> MaxPath a -> MaxPath a
-x +: (MaxPath r a) = MaxPath r' (max r' a)
+x +: MaxPath r a = MaxPath r' (max r' a)
   where
     r' = x <> r
 
