@@ -27,7 +27,7 @@ The tree binary tree given by
      /  \
   (15)  (7)
 is represented by
-    > treeB = Node (Leaf 9) (-10) (Node (Lead 15) 20 (Leaf 7))
+    > treeB = Node (Leaf 9) (-10) (Node (Leaf 15) 20 (Leaf 7))
 
 Given a binary tree, there is a UNIQUE PATH that connects any two nodes/leaves.
 
@@ -82,12 +82,20 @@ instance Functor Tree where
   fmap f (Leaf x) = Leaf (f x)
   fmap f (Node l x r) = Node (fmap f l) (f x) (fmap f r)
 
-foldTree :: (a -> b -> b -> b) -> (a -> b) -> Tree a -> b
-foldTree _ g (Leaf x) = g x
-foldTree f g (Node l x r) = f x l' r'
-  where
-    l' = foldTree f g l
-    r' = foldTree f g r
+data TreeF a b = LeafF a | NodeF b a b
+  deriving Show
+
+instance Functor (TreeF a) where
+  fmap _ (LeafF x) = LeafF x
+  fmap f (NodeF l x r) = NodeF (f l) x (f r)
+
+projectTree :: Tree a -> TreeF a (Tree a)
+projectTree (Leaf x) = LeafF x
+projectTree (Node l x r) = NodeF l x r
+
+cataTree :: (TreeF a b -> b) -> Tree a -> b
+cataTree f = f . fmap (cataTree f) . projectTree
+
 
 -- | Stores two maximum paths for the current tree node.
 -- The top path is the maximum path which starts from the current top node,
@@ -109,10 +117,14 @@ joinPaths x (MaxPath t1 x1) (MaxPath t2 x2) = MaxPath t' x'
     t' = x <> max t1 t2
     -- max path could be the top path, a path going through x and both child
     -- top paths, or just some child's max path without x.
-    x' = t' `max` (x <> t1 <> t2) `max` x1 `max`x2
+    x' = t' `max` (x <> t1 <> t2) `max` x1 `max` x2
+
+foldMaxPath :: (Ord a, Semigroup a) => TreeF a (MaxPath a) -> MaxPath a
+foldMaxPath (LeafF x) = singletonPath x
+foldMaxPath (NodeF l x r) = joinPaths x l r
 
 maxPath' :: (Ord a, Semigroup a) => Tree a -> MaxPath a
-maxPath' = foldTree joinPaths singletonPath
+maxPath' = cataTree foldMaxPath
 
 maxPath :: Tree Int -> Int
 maxPath = getSum . getMaxPath . maxPath' . fmap Sum
