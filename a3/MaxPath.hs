@@ -151,26 +151,27 @@ data Tree a = Leaf a
             | Node (Tree a) a (Tree a)
   deriving Show
 
-data MaxPath a = MaxPath { fromRoot :: a, fromAny :: a }
+data MaxPath a = MaxPath { openPath :: a, anyPath :: a }
   deriving Show
 
-instance Ord a => Semigroup (MaxPath a) where
-    (MaxPath x1 x2) <> (MaxPath y1 y2) = MaxPath (max x1 y1) (max x2 y2)
+instance (Ord a, Semigroup a) => Semigroup (MaxPath a) where
+    -- MaxPath 10 0 <> MaxPath -10 0
+    (MaxPath x1 x2) <> (MaxPath y1 y2) = MaxPath (max x1 y1) (max (x1 <> y1) $ max x2 y2)
 
 instance (Ord a, Monoid a) => Monoid (MaxPath a) where
     mempty = MaxPath mempty mempty
 
 infixr 4 +:
-(+:) :: (Ord (m a), Monoid (m a)) => m a -> MaxPath (m a) -> MaxPath (m a)
+(+:) :: (Ord a, Semigroup a) => a -> MaxPath a -> MaxPath a
 x +: (MaxPath r a) = MaxPath r' (max r' a)
     where r' = x <> r
 
 maxPath' :: Tree Int -> MaxPath (Sum Int)
 maxPath' (Leaf x) = Sum x +: mempty
-maxPath' (Node l x r) = Sum x +: (left <> right)
+maxPath' (Node l x r) = left <> (Sum x +: right)
   where
     left = maxPath' l
     right = maxPath' r
 
 maxPath :: Tree Int -> Int
-maxPath = getSum . fromAny . maxPath'
+maxPath = getSum . anyPath . maxPath'
