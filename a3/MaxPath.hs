@@ -145,26 +145,26 @@ You should run your code on some larger examples.
 --}
 
 import           Data.Monoid (Sum(Sum, getSum))
-import           Data.Function (on)
 
 data Tree a = Leaf a
             | Node (Tree a) a (Tree a)
   deriving Show
 
-data MaxPath a = MaxPath { openPath :: a, anyPath :: a }
+data MaxPath a = MaxPath { openPath :: a, closedPath :: a }
   deriving Show
 
 instance (Ord a, Semigroup a) => Semigroup (MaxPath a) where
-    -- MaxPath 10 0 <> MaxPath -10 0
-    (MaxPath x1 x2) <> (MaxPath y1 y2) = MaxPath (max x1 y1) (max (x1 <> y1) $ max x2 y2)
+  (MaxPath x1 x2) <> (MaxPath y1 y2) =
+    MaxPath (max x1 y1) (max (x1 <> y1) $ max x2 y2)
 
 instance (Ord a, Monoid a) => Monoid (MaxPath a) where
-    mempty = MaxPath mempty mempty
+  mempty = MaxPath mempty mempty
 
 infixr 4 +:
 (+:) :: (Ord a, Semigroup a) => a -> MaxPath a -> MaxPath a
 x +: (MaxPath r a) = MaxPath r' (max r' a)
-    where r' = x <> r
+  where
+    r' = x <> r
 
 maxPath' :: Tree Int -> MaxPath (Sum Int)
 maxPath' (Leaf x) = Sum x +: mempty
@@ -174,4 +174,4 @@ maxPath' (Node l x r) = left <> (Sum x +: right)
     right = maxPath' r
 
 maxPath :: Tree Int -> Int
-maxPath = getSum . anyPath . maxPath'
+maxPath = getSum . closedPath . maxPath'
