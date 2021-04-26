@@ -94,9 +94,9 @@ h a fa = fa a
 
 type Not a = a -> Void
 
--- 0 ^ (p^(0^p) + (0^p)^p)
 -- t7 :: (p -> (p -> Void)) -> ((p -> Void) -> p) -> Void
 t7 :: (p -> (p -> Void)) -> ((p -> Void) -> p) -> Void
 t7 f g = p2v p
   where p2v = \p -> f p p
         p = g p2v
+
