@@ -157,17 +157,17 @@ instance (Ord a, Semigroup a) => Semigroup (MaxPath a) where
   MaxPath x1 x2 <> MaxPath y1 y2 =
     MaxPath (max x1 y1) (max (x1 <> y1) $ max x2 y2)
 
-instance (Ord a, Monoid a) => Monoid (MaxPath a) where
-  mempty = MaxPath mempty mempty
-
 infixr 4 +:
 (+:) :: (Ord a, Semigroup a) => a -> MaxPath a -> MaxPath a
 x +: MaxPath r a = MaxPath r' (max r' a)
   where
     r' = x <> r
 
+singletonPath :: a -> MaxPath a
+singletonPath x = MaxPath x x
+
 maxPath' :: Tree Int -> MaxPath (Sum Int)
-maxPath' (Leaf x) = Sum x +: mempty
+maxPath' (Leaf x) = singletonPath (Sum x)
 maxPath' (Node l x r) = left <> (Sum x +: right)
   where
     left = maxPath' l
