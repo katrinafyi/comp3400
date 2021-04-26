@@ -151,48 +151,26 @@ data Tree a = Leaf a
             | Node (Tree a) a (Tree a)
   deriving Show
 
-data MonoidList m a = MonoidList { monoidAcc :: m a, getMonoidList :: [m a] }
+data MaxPath a = MaxPath { fromRoot :: a, fromAny :: a }
   deriving Show
 
-instance Eq (m a) => Eq (MonoidList m a) where
-  (==) = (==) `on` monoidAcc
+instance Ord a => Semigroup (MaxPath a) where
+    (MaxPath x1 x2) <> (MaxPath y1 y2) = MaxPath (max x1 y1) (max x2 y2)
 
-instance Ord (m a) => Ord (MonoidList m a) where
-  compare = compare `on` monoidAcc
+instance (Ord a, Monoid a) => Monoid (MaxPath a) where
+    mempty = MaxPath mempty mempty
 
-type SumList a = MonoidList Sum a
+infixr 4 +:
+(+:) :: (Ord (m a), Monoid (m a)) => m a -> MaxPath (m a) -> MaxPath (m a)
+x +: (MaxPath r a) = MaxPath r' (max r' a)
+    where r' = x <> r
 
-(<>:) :: (Monoid (m a)) => m a -> MonoidList m a -> MonoidList m a
-x <>: (MonoidList s xs) = MonoidList (x <> s) (x:xs)
-
-(+:) :: Num a => a -> SumList a -> SumList a
-(+:) = (<>:) . Sum
-
-singletonSumList :: a -> SumList a
-singletonSumList x = MonoidList (Sum x) [Sum x]
-
-data MaxPath a = MaxPath { fromRoot :: SumList a, fromAny :: SumList a }
-  deriving Show
-
-emptyPath :: Num a => MaxPath a
-emptyPath = MaxPath x x
-  where x = MonoidList mempty []
-
-makePath :: Ord a => SumList a -> SumList a -> MaxPath a
-makePath r a = MaxPath r (max r a)
-
-addParent :: (Ord a, Num a) => a -> MaxPath a -> MaxPath a
-addParent x (MaxPath r a) = makePath (x +: r) a
-
-mergePaths :: Ord a => MaxPath a -> MaxPath a -> MaxPath a
-mergePaths (MaxPath r1 a1) (MaxPath r2 a2) = makePath (max r1 r2) (max a1 a2)
-
-maxPath' :: Tree Int -> MaxPath Int
-maxPath' (Leaf x) = addParent x $ emptyPath
-maxPath' (Node l x r) = addParent x $ mergePaths left right
+maxPath' :: Tree Int -> MaxPath (Sum Int)
+maxPath' (Leaf x) = Sum x +: mempty
+maxPath' (Node l x r) = Sum x +: (left <> right)
   where
     left = maxPath' l
     right = maxPath' r
 
 maxPath :: Tree Int -> Int
-maxPath = getSum . monoidAcc . fromAny . maxPath'
+maxPath = getSum . fromAny . maxPath'
