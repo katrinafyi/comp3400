@@ -113,8 +113,8 @@ singletonPath x = MaxPath x x
 joinPaths :: (Ord a, Semigroup a) => a -> MaxPath a -> MaxPath a -> MaxPath a
 joinPaths x (MaxPath t1 x1) (MaxPath t2 x2) = MaxPath t' x'
   where
-    -- top path must include x, then the larger top path from its children.
-    t' = x <> max t1 t2
+    -- top path must include x, then possibly a top path from its children.
+    t' = x `max` (x <> max t1 t2)
     -- max path could be the top path, a path going through x and both child
     -- top paths, or just some child's max path without x.
     x' = t' `max` (x <> t1 <> t2) `max` x1 `max` x2
