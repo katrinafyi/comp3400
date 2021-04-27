@@ -74,6 +74,7 @@ You should run your code on some larger examples.
 --}
 
 import           Data.Monoid (Sum(Sum, getSum))
+import           Data.Function (on)
 
 data Tree a = Leaf a | Node (Tree a) a (Tree a)
   deriving Show
@@ -96,32 +97,57 @@ projectTree (Node l x r) = NodeF l x r
 cataTree :: (TreeF a b -> b) -> Tree a -> b
 cataTree f = f . fmap (cataTree f) . projectTree
 
+-- | A list which accumulates a semigroup value along with the list.
+data SList a = SList { getAcc :: a, getList :: [a] } deriving Show
+
+instance Functor SList where
+  fmap f (SList a l) = SList (f a) (fmap f l)
+
+instance Eq a => Eq (SList a) where
+  (==) = (==) `on` getAcc
+
+instance Ord a => Ord (SList a) where
+  compare = compare `on` getAcc
+
+instance Semigroup a => Semigroup (SList a) where
+  SList a1 l1 <> SList a2 l2 = SList (a1 <> a2) (l1 ++ l2)
+
+singletonSList :: a -> SList a
+singletonSList x = SList x [x]
 
 -- | Stores two maximum paths for the current tree node.
 -- The top path is the maximum path which starts from the current top node,
 -- and the max path is the maximum path over all paths in the subtrees.
-data MaxPath a = MaxPath { getTopPath :: a, getMaxPath :: a }
+data MaxPath a = MaxPath { getTopPath :: SList a, getMaxPath :: SList a }
   deriving Show
+
+instance Functor MaxPath where
+  fmap f (MaxPath t m) = MaxPath (fmap f t) (fmap f m)
 
 -- | Creates a MaxPath from a single node.
 singletonPath :: a -> MaxPath a
-singletonPath x = MaxPath x x
+singletonPath x = MaxPath sl sl
+  where sl = singletonSList x
 
 -- | Joins the given parent element and children paths.
 -- Paths are joined with node values by the Semigroup <> and maximum is taken
 -- over the Ord instance.
 joinPaths :: (Ord a, Semigroup a) => a -> MaxPath a -> MaxPath a -> MaxPath a
-joinPaths x (MaxPath t1 x1) (MaxPath t2 x2) = MaxPath t' x'
+joinPaths x (MaxPath t1 m1) (MaxPath t2 m2) = MaxPath t' m'
   where
+    x' = singletonSList x
     -- top path must include x, then possibly a top path from its children.
-    t' = x `max` (x <> max t1 t2)
+    t' = x' `max` (x' <> max t1 t2)
     -- max path could be the top path, a path going through x and both child
     -- top paths, or just some child's max path without x.
-    x' = t' `max` (x <> t1 <> t2) `max` x1 `max` x2
+    m' = t' `max` (t1 <> x' <> t2) `max` m1 `max` m2
 
 foldMaxPath :: (Ord a, Semigroup a) => TreeF a (MaxPath a) -> MaxPath a
 foldMaxPath (LeafF x) = singletonPath x
 foldMaxPath (NodeF l x r) = joinPaths x l r
 
+maxPath' :: (Ord a, Semigroup a) => Tree a -> MaxPath a
+maxPath' = cataTree foldMaxPath
+
 maxPath :: Tree Int -> Int
-maxPath = getSum . getMaxPath . cataTree foldMaxPath . fmap Sum
+maxPath = getSum . getAcc . getMaxPath . maxPath' . fmap Sum
