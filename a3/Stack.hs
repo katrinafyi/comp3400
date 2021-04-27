@@ -48,7 +48,13 @@ written submission is asking for some tests.
 
 -}
 
-data Stack a = Empty | Stack (Stack a) a deriving Show
+data Stack a = Empty | Stack (Stack a) a
+
+instance Show a => Show (Stack a) where
+  showsPrec _ Empty = showString "Empty"
+  showsPrec p (Stack xs x) = showParen (p >= 5)
+    $ showsPrec 5 x . showString " .: " . showsPrec 5 xs
+
 
 infixr 5 .:
 (.:) :: a -> Stack a -> Stack a
