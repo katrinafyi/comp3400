@@ -90,15 +90,13 @@ and NOT
 
 --}
 
-import           Control.Applicative ((<|>))
-import           Data.Maybe (fromMaybe)
 import           Data.Functor.Classes (Show1(liftShowsPrec), showsPrec1)
 import           Data.List (transpose)
 
 
 data Two a = Two a a deriving Eq
 instance Show1 Two where
-  liftShowsPrec showP showL p fa = showParen (p > 10)
+  liftShowsPrec showP _ p fa = showParen (p > 10)
     $ showString "Two" . foldr (\a b -> showChar ' ' . showP 11 a . b) id fa
 
 instance (Show a) => Show (Two a) where showsPrec = showsPrec1
@@ -124,7 +122,7 @@ mapFree :: (Functor f, Functor g) => (f (Free g a) -> g (Free g a)) -> Free f a 
 mapFree f = foldFree (Free . f) Pure
 
 foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
-foldFree f b (Pure x) = b x
+foldFree _ b (Pure x) = b x
 foldFree f b (Free x) = f $ foldFree f b <$> x
 
 
@@ -191,15 +189,15 @@ foldMatrixProducts (Two l r) = case maybeMult m1 m2 of
     (m1, l') = extractRight l
     (m2, r') = extractLeft r
 
-(^^^) :: Error -> Error -> Error
-a ^^^ b = DimMismatch (Left a) (Left b)
+-- (^^^) :: Error -> Error -> Error
+-- a ^^^ b = DimMismatch (Left a) (Left b)
 
-a, b, c :: Matrix
-a = [[1]]
-b = [[2]]
-c = [[3]]
+-- a, b, c :: Matrix
+-- a = [[1]]
+-- b = [[2]]
+-- c = [[3]]
 
-e1 = (NotAMatrix [] ^^^ ((NotAMatrix a ^^^ NotAMatrix []) ^^^ NotAMatrix c)) ^^^ (NotAMatrix b ^^^ NotAMatrix [])
+-- e1 = (NotAMatrix [] ^^^ ((NotAMatrix a ^^^ NotAMatrix []) ^^^ NotAMatrix c)) ^^^ (NotAMatrix b ^^^ NotAMatrix [])
 
 foldTwoToError :: Two (Either Error Matrix) -> Either Error Matrix
 foldTwoToError (Two x y) = Left $ DimMismatch x y
