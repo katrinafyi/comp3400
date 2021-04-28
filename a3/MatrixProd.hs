@@ -19,8 +19,8 @@ EXAMPLE
 [[1,2],[3,4],[5,6]] x [[7,8,9],[10,11,12]]
 [[27,30,33],[61,68,75],[95,106,117]]
 
-Implement matrix multiplication on the Matix type, which is just a type 
-synononym for [[Int]].  Your matrixMult **must be total** by utilizing the 
+Implement matrix multiplication on the Matix type, which is just a type
+synononym for [[Int]].  Your matrixMult **must be total** by utilizing the
 provided Error datattype:
 
 data Error = DimMismatch (Either Error Matrix) (Either Error Matrix) | NotAMatrix Matrix deriving Show
@@ -32,7 +32,7 @@ A matrix is a list of rows of EQUAL length.  The type [[Int]] cannot distinguish
  between a well-formed Matrix like:
     > aa = [ [1,2], [3,4], [5,6] ]
 and an ill-formed one like:
-    > bb = [ [1,2], [3,4,5], [6,7,8,9]]
+    > bb = [ [1,2], [3,4,5], [6,7,8,9] ]
 
 When encountering ill-formed matrices return the "NotAMatrix" error.
 
@@ -44,9 +44,10 @@ EXAMPLE
 
 > matProd [[1,2],[3,4],[5,6]] [[1,2],[3,4,5],[6,7,8,9]]
 [NotAMatrix [[1,2],[3,4,5],[6,7,8,9]]]
+Left $ DimMismatch (Right [[1,2],[3,4],[5,6]]) (Left $ NotAMatrix [[1,2],[3,4,5],[6,7,8,9]])
 
 > matProd [[1],[2,3]] [[]]
-[NotAMatrix [[1],[2,3]], NotAMatrix [[]]]
+Left $ DimMismatch (Left $ NotAMatrix [[1],[2,3]]) (Left $ NotAMatrix [[]])
 
 ==============
 Complication 2
@@ -62,20 +63,18 @@ then
 Your matProd function should return the following when encountering mismatched
 dimensions on well-formed matrices
     > matProd (Right [[1,2],[3,4],[5,6]]) (Right [[7,8],[9,10],[11,12]])
-    [DimMismatch (Right [[1,2],[3,4],[5,6]]) (Right [[7,8],[9,10],[11,12]])]
+    Left $ DimMismatch (Right [[1,2],[3,4],[5,6]]) (Right [[7,8],[9,10],[11,12]])
 and the following when multiplying ill-formed matrices.
     > matProd (Right [[1,2],[3,4],[5,6]]) (Right [[7,8],[9],[11,12]])
-    [DimMismatch (Right [[1,2],[3,4],[5,6]]) (Left [NotAMatrix [[7,8],[9],[11,12]])]]
+    Left $ DimMismatch (Right [[1,2],[3,4],[5,6]]) (Left $ NotAMatrix [[7,8],[9],[11,12]])
 
 ==============
 COMPLICATION 3
 ==============
-When doing a sequence of matrix multiplications, in order to satisfying typing, 
-you must return a list of Errors like the following:
+When doing a sequence of matrix multiplications, you must return a recursive
+Error like the following:
     > matProd (Right [[3,4,5], [1]]) (matProd (Right [[1],[1,2]]) (Right []))
-    Left [NotAMatrix [[3,4,5],[1]], NotAMatrix [[1],[1,2]], NotAMatrix []]
-which is :: [Error] and NOT
-    Left [NotAMatrix [[3,4,5],[1]], [NotAMatrix [[1],[1,2]], NotAMatrix []]]
+    Left $ DimMismatch (Left $ NotAMatrix [[3,4,5], [1]]) (Left $ DimMismatch (Left $ NotAMatrix [[1],[1,2]]) (Left $ NotAMatrix []))
 
 ==============
 COMPLICATION 4
@@ -85,15 +84,18 @@ the number of errors lifted by your code.
 
 For example:
     > matProd (Right [[1,1],[2,2]]) (matProd (Right [[1,1,1],[2,2,2]]) (Right [[1],[1,2]]))
-    [DimMismatch (Right [[3,3,3],[6,6,6]]) (Left NotAMatrix [[1],[1,2]])]
+    Left $ DimMismatch (Right [[3,3,3],[6,6,6]]) (Left $ NotAMatrix [[1],[1,2]])
 and NOT
-    [DimMismatch (Right [[1,1],[2,2]]) (DimMistmatch (Right [[1,1,1],[2,2,2]]) (Left [NotAMatrix [[1],[1,2]]))]]
+    Left $ DimMismatch (Right [[1,1],[2,2]]) (Left $ DimMismatch (Right [[1,1,1],[2,2,2]]) (Left $ NotAMatrix [[1],[1,2]]))
 
 --}
+
+-- not a matrix is if it's not rectangular, lengths should be the same.
 
 data Error = DimMismatch (Either Error Matrix) (Either Error Matrix) | NotAMatrix Matrix deriving Show
 
 type Matrix = [[Int]]
 
-matrixMult :: Either [Error] Matrix -> Either [Error] Matrix -> Either [Error] Matrix
+matrixMult :: Either Error Matrix -> Either Error Matrix -> Either Error Matrix
 matrixMult = undefined
+
