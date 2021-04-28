@@ -96,24 +96,20 @@ import           Data.Functor.Classes (Show1(liftShowsPrec), showsPrec1)
 import           Data.List (transpose)
 
 
-data Error = DimMismatch (Either Error Matrix) (Either Error Matrix) | NotAMatrix Matrix deriving Show
-
 data Two a = Two a a deriving Eq
-
 instance Show1 Two where
   liftShowsPrec showP showL p fa = showParen (p > 10)
     $ showString "Two" . foldr (\a b -> showChar ' ' . showP 11 a . b) id fa
 
 instance (Show a) => Show (Two a) where showsPrec = showsPrec1
-
 instance Functor Two where
   fmap f (Two a b) = Two (f a) (f b)
 
 instance Foldable Two where
   foldr f x (Two a b) = f a $ f b x
 
-data Free f a = Pure a | Free (f (Free f a))
 
+data Free f a = Pure a | Free (f (Free f a))
 instance (Show a, Show1 f) => Show (Free f a) where
   showsPrec p (Pure x) = showParen (p > 10)
     $ showString "Pure " . showsPrec 11 x
@@ -130,6 +126,9 @@ mapFree f = foldFree (Free . f) Pure
 foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
 foldFree f b (Pure x) = b x
 foldFree f b (Free x) = f $ foldFree f b <$> x
+
+
+data Error = DimMismatch (Either Error Matrix) (Either Error Matrix) | NotAMatrix Matrix deriving Show
 
 type Matrix = [[Int]]
 
@@ -165,6 +164,7 @@ extractRight (Free (Two l r)) = (x, Just $ maybe l (Free . Two l) r')
   where
     (x, r') = extractRight r
 
+
 dot :: Num a => [a] -> [a] -> a
 dot x y = sum $ zipWith (*) x y
 
@@ -183,8 +183,8 @@ fuseTree (Just l) Nothing x = Free $ Two l (Pure x)
 fuseTree Nothing (Just r) x = Free $ Two (Pure x) r
 fuseTree Nothing Nothing x = Pure x
 
-foldMultiplyTree :: Num a => Two (Free Two (Mat a)) -> Free Two (Mat a)
-foldMultiplyTree (Two l r) = case maybeMult m1 m2 of
+foldMatrixProducts :: Num a => Two (Free Two (Mat a)) -> Free Two (Mat a)
+foldMatrixProducts (Two l r) = case maybeMult m1 m2 of
   Just m1m2 -> fuseTree l' r' m1m2
   Nothing   -> Free (Two l r)
   where
@@ -199,7 +199,7 @@ a = [[1]]
 b = [[2]]
 c = [[3]]
 
-e1 = (NotAMatrix a ^^^ NotAMatrix b) ^^^ NotAMatrix c
+e1 = (NotAMatrix [] ^^^ ((NotAMatrix a ^^^ NotAMatrix []) ^^^ NotAMatrix c)) ^^^ (NotAMatrix b ^^^ NotAMatrix [])
 
 foldTwoToError :: Two (Either Error Matrix) -> Either Error Matrix
 foldTwoToError (Two x y) = Left $ DimMismatch x y
@@ -211,11 +211,8 @@ foldMatToError (NotMat m) = Left $ NotAMatrix m
 toMatrixError :: Free Two (Mat Int) -> Either Error Matrix
 toMatrixError = foldFree foldTwoToError foldMatToError
 
-test :: Either Error Matrix -> Either Error Matrix -> Free Two (Mat Int)
-test x y = toMatrixTree $ Left $ DimMismatch x y
-
 matProd' :: Num a => Free Two (Mat a) -> Free Two (Mat a)
-matProd' = foldFree foldMultiplyTree Pure
+matProd' = foldFree foldMatrixProducts Pure
 
 matProd :: Either Error Matrix -> Either Error Matrix -> Either Error Matrix
 matProd x y = toMatrixError . matProd' . toMatrixTree $ Left (DimMismatch x y)
