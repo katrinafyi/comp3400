@@ -152,13 +152,13 @@ toMatrixTree (Right m) = Pure $ toMatrix m
 
 extractLeft :: Free Two a -> (a, Maybe (Free Two a))
 extractLeft (Pure x) = (x, Nothing)
-extractLeft (Free (Two l r)) = (x, Just $ maybe r (Free . flip Two r) l')
+extractLeft (Free (Two l r)) = (x, Just $ fuseTree l' r Nothing)
   where
     (x, l') = extractLeft l
 
 extractRight :: Free Two a -> (a, Maybe (Free Two a))
 extractRight (Pure x) = (x, Nothing)
-extractRight (Free (Two l r)) = (x, Just $ maybe l (Free . Two l) r')
+extractRight (Free (Two l r)) = (x, Just $ fuseTree Nothing l r')
   where
     (x, r') = extractRight r
 
@@ -175,15 +175,16 @@ maybeMult (Mat m1 r1 c1) (Mat m2 r2 c2)
     m' = (\r -> dot r <$> columns) <$> rows
 maybeMult _ _ = Nothing
 
-fuseTree :: Maybe (Free Two a) -> Maybe (Free Two a) -> a -> Free Two a
-fuseTree (Just l) (Just r) x = Free $ Two l $ Free (Two (Pure x) r)
-fuseTree (Just l) Nothing x = Free $ Two l (Pure x)
-fuseTree Nothing (Just r) x = Free $ Two (Pure x) r
-fuseTree Nothing Nothing x = Pure x
 
-foldMatrixProducts :: Num a => Two (Free Two (Mat a)) -> Free Two (Mat a)
-foldMatrixProducts (Two l r) = case maybeMult m1 m2 of
-  Just m1m2 -> fuseTree l' r' m1m2
+fuseTree :: Maybe (Free Two a) -> Free Two a -> Maybe (Free Two a) -> Free Two a
+fuseTree (Just l) x (Just r) = Free $ Two l $ Free (Two x r)
+fuseTree (Just l) x Nothing = Free $ Two l x
+fuseTree Nothing x (Just r) = Free $ Two x r
+fuseTree Nothing x Nothing = x
+
+computeProducts :: Num a => Two (Free Two (Mat a)) -> Free Two (Mat a)
+computeProducts (Two l r) = case maybeMult m1 m2 of
+  Just m1m2 -> fuseTree l' (Pure m1m2) r'
   Nothing   -> Free (Two l r)
   where
     (m1, l') = extractRight l
@@ -199,18 +200,18 @@ foldMatrixProducts (Two l r) = case maybeMult m1 m2 of
 
 -- e1 = (NotAMatrix [] ^^^ ((NotAMatrix a ^^^ NotAMatrix []) ^^^ NotAMatrix c)) ^^^ (NotAMatrix b ^^^ NotAMatrix [])
 
-foldTwoToError :: Two (Either Error Matrix) -> Either Error Matrix
-foldTwoToError (Two x y) = Left $ DimMismatch x y
+twoToError :: Two (Either Error Matrix) -> Either Error Matrix
+twoToError (Two x y) = Left $ DimMismatch x y
 
-foldMatToError :: Mat Int -> Either Error Matrix
-foldMatToError (Mat m _ _) = Right m
-foldMatToError (NotMat m) = Left $ NotAMatrix m
+matToError :: Mat Int -> Either Error Matrix
+matToError (Mat m _ _) = Right m
+matToError (NotMat m) = Left $ NotAMatrix m
 
 toMatrixError :: Free Two (Mat Int) -> Either Error Matrix
-toMatrixError = foldFree foldTwoToError foldMatToError
+toMatrixError = foldFree twoToError matToError
 
 matProd' :: Num a => Free Two (Mat a) -> Free Two (Mat a)
-matProd' = foldFree foldMatrixProducts Pure
+matProd' = foldFree computeProducts Pure
 
 matProd :: Either Error Matrix -> Either Error Matrix -> Either Error Matrix
 matProd x y = toMatrixError . matProd' . toMatrixTree $ Left (DimMismatch x y)
