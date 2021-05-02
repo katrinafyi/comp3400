@@ -90,12 +90,78 @@ and NOT
 
 --}
 
+
 -- not a matrix is if it's not rectangular, lengths should be the same.
+import Data.Functor.Classes (Show1 (liftShowsPrec), showsPrec1)
+type Matrix = [[Int]]
 
 data Error = DimMismatch (Either Error Matrix) (Either Error Matrix) | NotAMatrix Matrix deriving Show
 
-type Matrix = [[Int]]
+
+data Two a = Two a a deriving Eq
+
+instance Show1 Two where
+  liftShowsPrec showP showL p fa = showParen (p > 10)
+    $ showString "Two" . foldr (\a b -> showChar ' ' . showP 11 a . b) id fa
+
+instance (Show a) => Show (Two a) where showsPrec = showsPrec1
+
+instance Functor Two where
+  fmap f (Two a b) = Two (f a) (f b)
+
+instance Foldable Two where
+  foldr f x (Two a b) = f a $ f b x
+
+data Free f a = Pure a | Free (f (Free f a))
+
+instance (Show a, Show1 f) => Show (Free f a) where
+  showsPrec p (Pure x) = showParen (p > 10)
+    $ showString "Pure " . showsPrec 11 x
+  showsPrec p (Free fx) = showParen (p > 10)
+    $ showString "Free " . liftShowsPrec showsPrec showList (11) fx
+
+instance Functor f => Functor (Free f) where
+  fmap f (Pure x) = Pure $ f x
+  fmap f (Free x) = Free $ fmap f <$> x
+
+mapFree :: (Functor f, Functor g) => (f (Free g a) -> g (Free g a)) -> Free f a -> Free g a
+mapFree f = foldFree (Free . f) Pure
+
+foldFree :: (Functor f) => (f b -> b) -> (a -> b) -> Free f a -> b
+foldFree f b (Pure x) = b x
+foldFree f b (Free x) = f $ foldFree f b <$> x
+
+
+data Mat a = Mat { getMatrix :: [[a]], getRows :: Int, getCols :: Int }
+           | NotMat { getMatrix :: [[a]] }
+  deriving (Show, Eq)
+
+
+toMatrix :: [[a]] -> Mat a
+toMatrix mat@(r@(_:_):rs)
+  | all ((== cols) . length) rs = Mat mat rows cols
+  where
+    cols = length r
+    rows = length mat
+toMatrix mat = NotMat mat
+
+toMatrixFree :: Either Error Matrix -> Free Two (Mat Int)
+toMatrixFree (Left (NotAMatrix m)) = Pure $ NotMat m
+toMatrixFree (Left (DimMismatch e1 e2)) = Free $ Two (toMatrixFree e1) (toMatrixFree e2)
+toMatrixFree (Right m) = Pure $ toMatrix m
+
+right :: Two (Free Two (Mat Int)) -> Free Two (Mat Int)
+right (Two _ r) = r
+
+left :: Two (Free Two (Mat Int)) -> Free Two (Mat Int)
+left (Two l _) = l
+
+foldMatrix :: Two (Free Two (Mat Int)) -> Free Two (Mat Int)
+foldMatrix (Two l r) =
+
+reduceMatrix :: Free Two (Mat Int) -> Free Two (Mat Int)
+reduceMatrix x = foldFree _ Pure x
+
 
 matrixMult :: Either Error Matrix -> Either Error Matrix -> Either Error Matrix
-matrixMult = undefined
-
+matrixMult m1 m2 = _ $ toMatrixFree $ Left $ DimMismatch m1 m2
