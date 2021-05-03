@@ -7,6 +7,7 @@ newtype Domino = Domino { getDomino :: (Int, Int) }
   deriving Show
 
 instance Eq Domino where
+  -- | Dominos are equal if they have the same numbers, regardless of ordering.
   Domino d1 == Domino d2 = d1 == d2 || d1 == swap d2
 
 -- | Returns true if the given dominos could form an adjacent pair.
@@ -18,6 +19,7 @@ isChain :: [Domino] -> Bool
 isChain ds = all (uncurry isPair) $ zip ds ds'
   where
     ds' = drop 1 $ cycle ds
+-- Zips each domino with the domino after it, wrapping around using cycle.
 
 -- | Returns true if the number appears on the given domino.
 hasNumber :: Int -> Domino -> Bool
