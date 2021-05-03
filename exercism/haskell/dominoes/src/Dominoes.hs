@@ -16,7 +16,7 @@ isPair (Domino d1) (Domino d2) = snd d1 == fst d2
 
 -- | Returns true if the given list of dominos forms a full circular chain.
 isChain :: [Domino] -> Bool
-isChain ds = all (uncurry isPair) $ zip ds ds'
+isChain ds = and $ zipWith isPair ds ds'
   where
     ds' = drop 1 $ cycle ds
 -- Zips each domino with the domino after it, wrapping around using cycle.
