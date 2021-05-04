@@ -1,4 +1,4 @@
-module Stack (Stack(Stack, Empty), stackFoldl, stackFoldr, stackZip, stackMap) where
+module Stack (stackFoldl, stackFoldr, stackZip, stackMap) where
 
 {-
 You *MAY* use packages from base
