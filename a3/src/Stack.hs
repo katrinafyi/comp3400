@@ -1,4 +1,4 @@
-module Stack (stackFoldl, stackFoldr, stackZip, stackMap) where
+module Stack (Stack(Stack, Empty), stackFoldl, stackFoldr, stackZip, stackMap) where
 
 {-
 You *MAY* use packages from base
@@ -48,7 +48,7 @@ written submission is asking for some tests.
 
 -}
 
-data Stack a = Empty | Stack (Stack a) a
+data Stack a = Empty | Stack (Stack a) a deriving Eq
 
 instance Show a => Show (Stack a) where
   showsPrec _ Empty = showString "Empty"
