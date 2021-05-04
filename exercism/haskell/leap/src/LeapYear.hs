@@ -4,10 +4,6 @@ divides :: Integer -> Integer -> Bool
 divides d n = n `mod` d == 0
 
 isLeapYear :: Integer -> Bool
-isLeapYear year = if 100 `divides` year then 400 `divides` year else 4 `divides` year
-
-
-
-
-
-
+isLeapYear y
+  | 100 `divides` y = 400 `divides` y
+  | otherwise = 4 `divides` y
