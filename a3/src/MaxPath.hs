@@ -147,3 +147,6 @@ maxPath' = cataTree foldMaxPath
 
 maxPath :: Tree Int -> Int
 maxPath = getSum . pairFst . getMaxPath . maxPath'
+
+t :: Tree Integer
+t = Node (Node (Node (Leaf 150) (-300) (Leaf 0)) 90 (Leaf 0)) 30 (Node (Leaf 0) 90 (Node (Leaf 0) (-300) (Leaf 150)))
