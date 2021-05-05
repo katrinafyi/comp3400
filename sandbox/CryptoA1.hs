@@ -76,7 +76,7 @@ chunkToColumns n = transpose . chunks n
 tabulate :: (Show a, Show b) => M.Map a b -> [String]
 tabulate m = makeRow <$> M.toList m
   where
-    makeRow (k, v) = show k ++ "\t => " ++ show v
+    makeRow (k, v) = show k ++ "\t" ++ show v
 
 printMap :: (Show a, Show b) => M.Map a b -> IO ()
 printMap = mapM_ putStrLn . tabulate
