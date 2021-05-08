@@ -15,29 +15,37 @@ Consider the following data constructor...
 You task is to implement some of the typical higher-order-function for this
 list.
 
+**DO NOT** just convert to a list and convert back.
+
 =======
 EXAMPLE
 =======
 
-> as = Empty
-> bs = Stack as 1
-> cs = Stack bs 2
-> xs = Stack cs 3
-> ys = Stack xs 4
-> zs = Stack ys 5
+>>> as = Empty
+>>> bs = Stack as 1
+>>> cs = Stack bs 2
+>>> xs = Stack cs 3
+>>> ys = Stack xs 4
+>>> zs = Stack ys 5
 
-> stackFoldl (*) 6 zs
+>>> stackFoldl (*) 6 zs
 720
 
-> stackFoldr (*) 6 zs
+>>> stackFoldl (^) 0 xs
+0
+
+>>> stackFoldr (*) 6 zs
 720
 
-> stackMap (2*) zs
-Stack (Stack (Stack (Stack (Stack Empty 2) 4) 6) 8) 10
+>>> stackFoldr (^) 0 xs
+9
 
-> ks = stackMap (2*) zs
-> stackZip xs ks-- as with built-in zip, truncate the longer stack.
-Stack (Stack (Stack Empty (1,2)) (2,4)) (3,6)
+>>> stackMap (2*) zs
+10 .: (8 .: (6 .: (4 .: (2 .: Empty))))
+
+>>> ks = stackMap (2*) zs
+>>> stackZip xs ks-- as with built-in zip, truncate the longer stack.
+(3,10) .: ((2,8) .: ((1,6) .: Empty))
 
 NOTE:  Passing these tests ONLY is DEFINITELY insufficient to conclude your code
 is correct.  For instance, the folding examples use a commutative operator and
