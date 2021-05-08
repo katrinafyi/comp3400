@@ -97,22 +97,22 @@ projectTree (Node l x r) = NodeF l x r
 cataTree :: (TreeF a b -> b) -> Tree a -> b
 cataTree f = f . fmap (cataTree f) . projectTree
 
--- | A list which accumulates a semigroup value along with the list.
-data Pair a b = Pair { pairFst :: a, pairSnd :: b } deriving Show
+-- | A pair whose first element is some accumulator, used for Eq and Ord.
+data Semipair a b = Semipair { semipairFst :: a, semipairSnd :: b } deriving Show
 
-instance Eq a => Eq (Pair a b) where
-  (==) = (==) `on` pairFst
+instance Eq a => Eq (Semipair a b) where
+  (==) = (==) `on` semipairFst
 
-instance Ord a => Ord (Pair a b) where
-  compare = compare `on` pairFst
+instance Ord a => Ord (Semipair a b) where
+  compare = compare `on` semipairFst
 
-instance (Semigroup a, Semigroup b) => Semigroup (Pair a b) where
-  Pair a1 b1 <> Pair a2 b2 = Pair (a1 <> a2) (b1 <> b2)
+instance (Semigroup a, Semigroup b) => Semigroup (Semipair a b) where
+  Semipair a1 b1 <> Semipair a2 b2 = Semipair (a1 <> a2) (b1 <> b2)
 
-type SumList a = Pair (Sum a) [a]
+type SumList a = Semipair (Sum a) [a]
 
-singletonSList :: a -> SumList a
-singletonSList x = Pair (Sum x) [x]
+semipairPure :: (Applicative f, Applicative g) => a -> Semipair (f a) (g a)
+semipairPure x = Semipair (pure x) (pure x)
 
 -- | Stores two maximum paths for the current tree node.
 -- The top path is the maximum path which starts from the current top node,
@@ -123,7 +123,7 @@ data MaxPath a = MaxPath { getTopPath :: SumList a, getMaxPath :: SumList a }
 -- | Creates a MaxPath from a single node.
 singletonPath :: a -> MaxPath a
 singletonPath x = MaxPath sl sl
-  where sl = singletonSList x
+  where sl = semipairPure x
 
 -- | Joins the given parent element and children paths.
 -- Paths are joined with node values by the Semigroup <> and maximum is taken
@@ -131,9 +131,9 @@ singletonPath x = MaxPath sl sl
 joinPaths :: (Ord a, Num a) => a -> MaxPath a -> MaxPath a -> MaxPath a
 joinPaths x (MaxPath t1 m1) (MaxPath t2 m2) = MaxPath t' m'
   where
-    x' = singletonSList x
+    x' = semipairPure x
     -- top path must include x, then possibly a top path from its children.
-    t' = x' `max` (x' <> max t1 t2)
+    t' = x' `max` (t1 <> x') `max` (x' <> t2)
     -- max path could be the top path, a path going through x and both child
     -- top paths, or just some child's max path without x.
     m' = t' `max` (t1 <> x' <> t2) `max` m1 `max` m2
@@ -146,7 +146,7 @@ maxPath' :: (Ord a, Num a) => Tree a -> MaxPath a
 maxPath' = cataTree foldMaxPath
 
 maxPath :: Tree Int -> Int
-maxPath = getSum . pairFst . getMaxPath . maxPath'
+maxPath = getSum . semipairFst . getMaxPath . maxPath'
 
-t :: Tree Integer
-t = Node (Node (Node (Leaf 150) (-300) (Leaf 0)) 90 (Leaf 0)) 30 (Node (Leaf 0) 90 (Node (Leaf 0) (-300) (Leaf 150)))
+-- t :: Tree Integer
+-- t = Node (Node (Node (Leaf 150) (-300) (Leaf 0)) 90 (Leaf 0)) 30 (Node (Leaf 0) 90 (Node (Leaf 0) (-300) (Leaf 150)))
