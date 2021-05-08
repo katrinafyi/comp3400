@@ -5,10 +5,11 @@ module Garden
     ) where
 
 import qualified Data.Map.Strict as M
-import           Data.Maybe
-import           Control.Applicative
-import           Data.Functor.Identity
-
+import           Data.Maybe (catMaybes)
+import           Control.Applicative (Applicative(liftA2)
+                                    , ZipList(ZipList, getZipList))
+import           Data.Functor.Identity (Identity(..))
+import           Data.List (transpose)
 
 data Plant = Clover
            | Grass
@@ -33,6 +34,26 @@ toPlant _ = Nothing
 chunks :: Int -> [a] -> [[a]]
 chunks _ [] = []
 chunks n xs = take n xs : chunks n (drop n xs)
+
+-- | Given a list of students and a string representing plants, build the Garden.
+garden :: [String] -> String -> Garden
+garden s p = Garden (M.fromList pairs)
+  where
+    -- split plants into rows and convert to Plant.
+    rows = fmap toPlant <$> lines p
+    -- within each row, break into chunks of 2 plants each.
+    chunked = chunks 2 <$> rows
+    -- collect each student's plants down the colums by folding.
+    squares = concat <$> transpose chunked
+    -- generate a list of (student, plants) tuples, then remove Nothing from
+    -- list of plants. we filter Nothing last so invalid plants early no do not
+    -- break the positioning of plants later in the same row.
+    pairs = fmap catMaybes <$> zip s squares
+
+-- | Returns the student's plants in the given garden.
+lookupPlants :: String -> Garden -> [Plant]
+lookupPlants s (Garden g) = M.findWithDefault [] s g
+
 
 -- | Applies a fold down the columns of a 2D list of lists.
 -- Folds through the outer foldable f, each step applying the given function
@@ -80,26 +101,3 @@ f4 = foldAp (\a fb -> pure a <> fb) mempty
 -- traverse :: (Traversable t, Applicative f) => (a -> f b) -> t a -> f (t b)
 t :: (Monoid (f b), Foldable f, Applicative f, Applicative g) => (a -> g b) -> f a -> g (f b)
 t f = f4 . fmap f
-
--- | Transposes a 2D list (for fun).
-transpose :: [[a]] -> [[a]]
-transpose = foldDown (:) []
-
--- | Given a list of students and a string representing plants, build the Garden.
-garden :: [String] -> String -> Garden
-garden s p = Garden (M.fromList pairs)
-  where
-    -- split plants into rows and convert to Plant.
-    rows = fmap toPlant <$> lines p
-    -- within each row, break into chunks of 2 plants each.
-    chunked = chunks 2 <$> rows
-    -- collect each student's plants down the colums by folding.
-    squares = foldDown (++) [] chunked
-    -- generate a list of (student, plants) tuples, then remove Nothing from
-    -- list of plants. we filter Nothing last so invalid plants early no do not
-    -- break the positioning of plants later in the same row.
-    pairs = fmap catMaybes <$> zip s squares
-
--- | Returns the student's plants in the given garden.
-lookupPlants :: String -> Garden -> [Plant]
-lookupPlants s (Garden g) = M.findWithDefault [] s g
