@@ -4,18 +4,16 @@ import Data.List (delete, minimumBy)
 import Data.Ord (comparing)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe)
+import Control.Monad (ap, liftM)
 
 newtype State s a = State { runState :: s -> (a, s) }
 
 instance Functor (State s) where
-  fmap f = (>>= (return . f))
+  fmap = liftM
 
 instance Applicative (State s) where
   pure = return
-
-  sf <*> sa = do
-    f <- sf
-    f <$> sa
+  (<*>) = ap
 
 instance Monad (State s) where
   return a = State (\s -> (a, s))
@@ -36,19 +34,21 @@ findCoins' :: MemoisedFunction (Integer, [Integer]) (Maybe [Integer])
 findCoins' (0, _) = pure $ Just []
 findCoins' (_, []) = pure Nothing
 findCoins' k@(target, coins) = do
-    x <- sequence $ do
-        c <- coins
-        val <- takeWhile (<= target) [c, c+c..]
-        let rest = findCoins' (target - val, delete c coins)
-        -- fmap (replicate (fromInteger $ val `div` c) c ++)
-        --fmap (replicate (fromInteger $ val `div` c) c ++) <$> x
-        pure $ fmap (replicate (fromInteger $ val `div` c) c ++) <$> rest
-    m <- getState
-    let cached = M.lookup k m
-    let computed = shortest $ catMaybes x
-    let result = fromMaybe computed cached
-    putState $ M.insert k result m
-    pure result
+  x <- sequence
+    $ do
+      c <- coins
+      val <- takeWhile (<= target) [c, c + c ..]
+      let rest = findCoins' (target - val, delete c coins)
+      -- fmap (replicate (fromInteger $ val `div` c) c ++)
+      --fmap (replicate (fromInteger $ val `div` c) c ++) <$> x
+      pure $ fmap (replicate (fromInteger $ val `div` c) c ++) <$> rest
+  m <- getState
+  let cached = M.lookup k m
+  let computed = shortest $ catMaybes x
+  let result = fromMaybe computed cached
+  putState $ M.insert k result m
+  pure result
+
 
 -- findCoins :: Integer -> [Integer] -> [[Integer]]
 -- findCoins 0 _ = [[]]
@@ -62,7 +62,7 @@ findCoins' k@(target, coins) = do
 -- memoise f k m =
 
 findFewestCoins :: Integer -> [Integer] -> Maybe [Integer]
-findFewestCoins target = undefined --shortest . findCoins target
+findFewestCoins target coins = fst $ runState (findCoins' (target, coins)) M.empty
 
 shortest :: [[a]] -> Maybe [a]
 shortest [] = Nothing
