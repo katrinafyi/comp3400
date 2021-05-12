@@ -27,8 +27,8 @@ instance Monad (State s) where
 getState :: State s s
 getState = State $ \s -> (s,s)
 
-putState :: a -> State s a
-putState a = State $ \s -> (a, s)
+putState :: s -> State s ()
+putState s = State $ const ((), s)
 
 type MemoisedFunction a b = a -> State (M.Map a b) b
 
@@ -47,7 +47,7 @@ findCoins' k@(target, coins) = do
     let cached = M.lookup k m
     let computed = shortest $ catMaybes x
     let result = fromMaybe computed cached
-    putState $ M.insert k result
+    putState $ M.insert k result m
     pure result
 
 -- findCoins :: Integer -> [Integer] -> [[Integer]]
