@@ -1,10 +1,12 @@
 module Change (findFewestCoins) where
 
-import Data.List (delete, minimumBy)
-import Data.Ord (comparing)
+import           Data.Ord (comparing)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe)
-import Control.Monad (ap, liftM)
+import qualified Data.List.NonEmpty as N
+import           Data.Maybe (catMaybes, fromMaybe)
+import           Control.Monad (ap, liftM)
+import           Data.List (minimumBy)
+
 
 newtype State s a = State { runState :: s -> (a, s) }
 
@@ -33,12 +35,11 @@ type MemoisedFunction a b = a -> State (M.Map a b) b
 findCoins' :: MemoisedFunction (Integer, [Integer]) (Maybe [Integer])
 findCoins' (0, _) = pure $ Just []
 findCoins' (_, []) = pure Nothing
-findCoins' k@(target, coins) = do
+findCoins' k@(target, c:cs) = do
   x <- sequence
     $ do
-      c <- coins
-      val <- takeWhile (<= target) [c, c + c ..]
-      let rest = findCoins' (target - val, delete c coins)
+      val <- takeWhile (<= target) [0, c..]
+      let rest = findCoins' (target - val, cs)
       -- fmap (replicate (fromInteger $ val `div` c) c ++)
       --fmap (replicate (fromInteger $ val `div` c) c ++) <$> x
       pure $ fmap (replicate (fromInteger $ val `div` c) c ++) <$> rest
@@ -49,20 +50,21 @@ findCoins' k@(target, coins) = do
   putState $ M.insert k result m
   pure result
 
+findCoins :: Integer -> [Integer] -> [[Integer]]
+findCoins 0 _ = [[]]
+findCoins _ [] = []
+findCoins target (c:cs) = do
+  val <- takeWhile (<= target) [0, c..]
+  rest <- findCoins (target - val) cs
+  let n = fromInteger $ val `div` c
+  pure $ replicate n c ++ rest
 
--- findCoins :: Integer -> [Integer] -> [[Integer]]
--- findCoins 0 _ = [[]]
--- findCoins _ [] = []
--- findCoins target coins = do
---     c <- coins
---     val <- takeWhile (<= target) [c, c+c..]
---     (replicate (fromInteger $ val `div` c) c ++) <$> findCoins (target - val) (delete c coins)
-
--- memoise :: Ord a => (a -> b) -> a -> M.Map a b -> (b, M.Map a b)
--- memoise f k m =
+headMaybe :: [a] -> Maybe a
+headMaybe = fmap N.head . N.nonEmpty
 
 findFewestCoins :: Integer -> [Integer] -> Maybe [Integer]
-findFewestCoins target coins = fst $ runState (findCoins' (target, coins)) M.empty
+findFewestCoins target coins = headMaybe $ findCoins target coins
+-- findFewestCoins target coins = fst $ runState (findCoins' (target, coins)) M.empty
 
 shortest :: [[a]] -> Maybe [a]
 shortest [] = Nothing
