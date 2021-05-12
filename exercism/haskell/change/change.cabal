@@ -1,0 +1,36 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: e11642d14241eb3f44b6b36aeb6c59aa6315f8084442e1a5ba5f3643ee884ea6
+
+name:           change
+version:        1.3.0.7
+build-type:     Simple
+
+library
+  exposed-modules:
+      Change
+  other-modules:
+      Paths_change
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base
+  default-language: Haskell2010
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Tests.hs
+  other-modules:
+      Paths_change
+  hs-source-dirs:
+      test
+  build-depends:
+      base
+    , change
+    , hspec
+  default-language: Haskell2010
