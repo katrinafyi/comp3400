@@ -63,9 +63,10 @@ FoOAK
 -- NOT FuHo because Full House has lower rank.
 --}
 
-import Data.List (sort, group)
-import Data.Maybe (mapMaybe)
-import Data.Semigroup (Arg(Arg))
+import           Data.List (sort, group)
+import           Data.Maybe (mapMaybe)
+import           Data.Semigroup (Arg(Arg))
+
 
 data Suit = Hearts | Clubs | Diamonds | Spades deriving (Show, Eq, Ord, Enum, Bounded)
 data Rank = Numeric Int | Jack | Queens | King | Ace deriving (Eq, Ord)
@@ -73,10 +74,12 @@ data Card = NormalCard Rank Suit | Joker deriving Eq
 
 data HandRanking = FiOAK | StFl | FoOAK | FuHo | Fl | St | TrOAK | TwPr | OnPr | HiCa deriving (Show, Eq, Ord)
 
+
 data Value = AL | C2 | C3 | C4 | C5 | C6 | C7 | C8 | C9 | C10 | J | Q | K | AH
     deriving (Show, Eq, Ord, Enum, Bounded)
 
 data Hand = Hand { handValues :: [Value], handSuits :: [Suit] } deriving (Show)
+
 
 rankToValue :: Rank -> [Value]
 rankToValue (Numeric 2) = [C2]
@@ -94,50 +97,29 @@ rankToValue King = [K]
 rankToValue Ace = [AL, AH]
 rankToValue (Numeric x) = error $ "unknown numeric card rank: " ++ show x
 
-
 toValues :: Card -> Maybe [Value]
 toValues (NormalCard r _) = Just $ rankToValue r
 toValues Joker = Nothing
 
-toSuits :: Card -> Maybe Suit
-toSuits (NormalCard _ s) = Just s
-toSuits Joker = Nothing
-
--- predMaybe :: (Enum a, Bounded a) => a -> Maybe a
--- predMaybe x = guard (x /= minBound) $> pred x
-
--- succMaybe :: (Enum a, Bounded a) => a -> Maybe a
--- succMaybe x = guard (x /= maxBound) $> succ x
-
--- nearby :: (Enum a, Bounded a) => a -> [a]
--- nearby = catMaybes . sequence [predMaybe, pure, succMaybe]
-
--- resolveJokers :: [Card] -> [[Card]]
--- resolveJokers cs = (nonJokers++) <$> do
---     v <- nearVals
---     s <- suits
---     _
---     where numJokers = length $ filter (== Joker) cs
---           nonJokers = filter (/= Joker) cs
---           suits = nub $ concatMap toSuits nonJokers
---           vals = concatMap toValues nonJokers
---           nearVals = nub $ concatMap nearby vals
+toSuit :: Card -> Maybe Suit
+toSuit (NormalCard _ s) = Just s
+toSuit Joker = Nothing
 
 toHands :: [Card] -> [Hand]
 toHands cs = do
-    vs <- sequence $ mapMaybe toValues cs
-    let ss = mapMaybe toSuits cs
-    pure $ Hand (sort vs) (sort ss)
+  vs <- sequence $ mapMaybe toValues cs
+  let ss = mapMaybe toSuit cs
+  pure $ Hand (sort vs) (sort ss)
 
-cardList :: (Card, Card, Card, Card, Card) -> [Card]
-cardList (c1, c2, c3, c4, c5) = [c1, c2, c3, c4, c5]
 
-isConsecutive :: (Ord a, Enum a, Bounded a) => [a] -> Bool
-isConsecutive xs = and $ zipWith (\x y -> x < maxBound && succ x == y) xs xs'
-    where xs' = drop 1 xs
+isConsecutive :: (Eq a, Enum a, Bounded a) => [a] -> Bool
+isConsecutive xs = and $ zipWith (\x y -> x /= maxBound && succ x == y) xs xs'
+  where
+    xs' = drop 1 xs
 
 frequencies :: Eq a => [a] -> [Int]
 frequencies = sort . fmap length . group
+
 
 rankHand :: Hand -> HandRanking
 rankHand (Hand values suits)
@@ -162,6 +144,7 @@ rankHand (Hand values suits)
     sameSuit = length suitCounts <= 1
     consecutive = isConsecutive values
 
+
 arg :: (a -> b) -> a -> Arg b a
 arg f x = Arg (f x) x
 
@@ -171,8 +154,13 @@ getArgVal (Arg x _) = x
 bestHand :: [Card] -> Arg HandRanking Hand
 bestHand = minimum . fmap (arg rankHand) . toHands
 
+
+cardList :: (Card, Card, Card, Card, Card) -> [Card]
+cardList (c1, c2, c3, c4, c5) = [c1, c2, c3, c4, c5]
+
 ranking :: (Card, Card, Card, Card, Card) -> HandRanking
 ranking = getArgVal . bestHand . cardList
+
 
 h1 :: (Card, Card, Card, Card, Card)
 h1 = ((NormalCard Ace Hearts),
