@@ -59,6 +59,8 @@ when converted into a base ten number.
 
 import           Data.List (delete)
 import           Data.Maybe (listToMaybe)
+import           Control.Monad (guard)
+import           Data.List.NonEmpty (nonEmpty)
 
 -- | Returns true if the given dominos could form an adjacent pair.
 isPair :: Eq a => (b, a) -> (a, c) -> Bool
@@ -82,14 +84,12 @@ chainFrom p x xs = do
 chainFromAll :: (a -> a -> Bool) -> [a] -> [[a]]
 chainFromAll _ [] = pure []
 chainFromAll p xs = do
-    (y, ys) <- select xs
-    (y:) <$> chainFrom p y ys
-
--- | Converts a homogenous tuple to a list.
-pairToList :: (a, a) -> [a]
-pairToList (x, y) = [x, y]
+  (y, ys) <- select xs
+  (y:) <$> chainFrom p y ys
 
 encode :: [(Int, Int)] -> Maybe [Int]
-encode xs =  listToMaybe $ do
-  (y, ys) <- filter (\(x, _) -> (== 0) $ fst x) $ select xs
-  (pairToList y ++) . fmap snd <$> chainFrom isPair y ys
+encode xs = fmap minimum . nonEmpty $ do
+  game <- chainFromAll isPair xs
+  (x, _) <- take 1 game
+  guard $ x == 0
+  pure $ x : fmap snd game
