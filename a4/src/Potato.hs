@@ -57,8 +57,6 @@ when converted into a base ten number.
     thus the former is returned.
 --}
 
-import           Data.List (delete)
-import           Data.Maybe (listToMaybe)
 import           Control.Monad (guard)
 import           Data.List.NonEmpty (nonEmpty)
 
@@ -70,26 +68,25 @@ isPair (_, x) (y, _) = x == y
 -- is the remainder of the list without that element.
 select :: [a] -> [(a, [a])]
 select [] = []
-select (x:xs) = (x, xs) : map (fmap (x:)) (select xs)
+select (x:xs) = (x, xs) : rest
+  where rest = fmap (x:) <$> select xs
 
 
 -- | Returns all chains which could appear following the given first value.
 -- The first value does not appear in any of the lists.
 chainFrom :: (a -> a -> Bool) -> a -> [a] -> [[a]]
-chainFrom _ _ [] = pure []
 chainFrom p x xs = do
-  (y, ys) <- filter (p x . fst) $ select xs
-  (y:) <$> chainFrom p y ys
-
-chainFromAll :: (a -> a -> Bool) -> [a] -> [[a]]
-chainFromAll _ [] = pure []
-chainFromAll p xs = do
   (y, ys) <- select xs
-  (y:) <$> chainFrom p y ys
+  guard $ p x y
+  chainFromFirst p (y:ys)
+
+chainFromFirst :: (a -> a -> Bool) -> [a] -> [[a]]
+chainFromFirst p (x:xs@(_:_)) = (x:) <$> chainFrom p x xs
+chainFromFirst _ xs = pure xs
+
+solve :: [(Int, Int)] -> [[Int]]
+solve = fmap (fmap snd) . chainFromFirst isPair . ((0,0):)
 
 encode :: [(Int, Int)] -> Maybe [Int]
-encode xs = fmap minimum . nonEmpty $ do
-  game <- chainFromAll isPair xs
-  (x, _) <- take 1 game
-  guard $ x == 0
-  pure $ x : fmap snd game
+encode [] = Nothing
+encode xs = minimum <$> nonEmpty (solve xs)
