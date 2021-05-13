@@ -1,13 +1,13 @@
 module Potato where
 
---- do not change anything above this line --- 
+--- do not change anything above this line ---
 
 {--
 You *MAY* use packages from base
 https://hackage.haskell.org/package/base
 but no others.
 
-During a game of "hot potato" a token (a potato) is passed amongst a group of 
+During a game of "hot potato" a token (a potato) is passed amongst a group of
 people until some timer goes off at which point the game ends.
 
 Suppose a game of "hot potato" is played among people with unique Integer
@@ -20,7 +20,7 @@ identifiers. So, for instance, a game with the following moves
 can be ENCODED as
 [0, 1, 2, 3, 4, 5]
 
-You can also have more sophisticated games where the potato is passed back 
+You can also have more sophisticated games where the potato is passed back
 to people who have already had the potato:
 (0, 2)
 (2, 0)
@@ -44,7 +44,7 @@ A:  The list of tuples will not be given in order.
 
     > encode [(4,5),(1,2),(2,3),(0,1),(3,4)]
     Just [0, 1, 2, 3, 4, 5]
-    
+
     > encode [(0, 1), (0, 2), (1, 2), (2, 0), (2, 1)]
     Just [0, 2, 0, 1, 2, 1]
 
@@ -53,9 +53,43 @@ when converted into a base ten number.
 
     > encode [(0, 1), (0, 2), (1, 2), (2, 0), (2, 1)]
     Just [0, 1, 2, 0, 2, 1]
-    -- even though [0, 2, 1, 2, 0, 1] is also a valid game, 12021 < 21201 and 
+    -- even though [0, 2, 1, 2, 0, 1] is also a valid game, 12021 < 21201 and
     thus the former is returned.
 --}
 
+import           Data.List (delete)
+import           Data.Maybe (listToMaybe)
+
+-- | Returns true if the given dominos could form an adjacent pair.
+isPair :: Eq a => (b, a) -> (a, c) -> Bool
+isPair (_, x) (y, _) = x == y
+
+-- | Returns a list of tuples where the first element is a value and the second
+-- is the remainder of the list without that element.
+select :: [a] -> [(a, [a])]
+select [] = []
+select (x:xs) = (x, xs) : map (fmap (x:)) (select xs)
+
+
+-- | Returns all chains which could appear following the given first value.
+-- The first value does not appear in any of the lists.
+chainFrom :: (a -> a -> Bool) -> a -> [a] -> [[a]]
+chainFrom _ _ [] = pure []
+chainFrom p x xs = do
+  (y, ys) <- filter (p x . fst) $ select xs
+  (y:) <$> chainFrom p y ys
+
+chainFromAll :: (a -> a -> Bool) -> [a] -> [[a]]
+chainFromAll _ [] = pure []
+chainFromAll p xs = do
+    (y, ys) <- select xs
+    (y:) <$> chainFrom p y ys
+
+-- | Converts a homogenous tuple to a list.
+pairToList :: (a, a) -> [a]
+pairToList (x, y) = [x, y]
+
 encode :: [(Int, Int)] -> Maybe [Int]
-encode = undefined
+encode xs =  listToMaybe $ do
+  (y, ys) <- filter (\(x, _) -> (== 0) $ fst x) $ select xs
+  (pairToList y ++) . fmap snd <$> chainFrom isPair y ys
