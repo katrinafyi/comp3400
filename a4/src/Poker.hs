@@ -68,17 +68,22 @@ import           Data.Maybe (mapMaybe)
 import           Data.Semigroup (Arg(Arg))
 
 
-data Suit = Hearts | Clubs | Diamonds | Spades deriving (Show, Eq, Ord, Enum, Bounded)
-data Rank = Numeric Int | Jack | Queens | King | Ace deriving (Eq, Ord)
-data Card = NormalCard Rank Suit | Joker deriving Eq
+data Suit = Hearts | Clubs | Diamonds | Spades
+  deriving (Show, Eq, Ord, Enum, Bounded)
+data Rank = Numeric Int | Jack | Queens | King | Ace
+  deriving (Eq, Ord)
+data Card = NormalCard Rank Suit | Joker
+  deriving (Eq)
 
-data HandRanking = FiOAK | StFl | FoOAK | FuHo | Fl | St | TrOAK | TwPr | OnPr | HiCa deriving (Show, Eq, Ord)
+data HandRanking = FiOAK | StFl | FoOAK | FuHo | Fl | St | TrOAK | TwPr | OnPr | HiCa
+  deriving (Show, Eq, Ord)
 
 
 data Value = AL | C2 | C3 | C4 | C5 | C6 | C7 | C8 | C9 | C10 | J | Q | K | AH
-    deriving (Show, Eq, Ord, Enum, Bounded)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
-data Hand = Hand { handValues :: [Value], handSuits :: [Suit] } deriving (Show)
+data Hand = Hand { handValues :: [Value], handSuits :: [Suit] }
+  deriving (Show)
 
 
 rankToValue :: Rank -> [Value]
