@@ -151,7 +151,7 @@ rankHand (Hand ranks suits)
     sameSuit = length suitCounts <= 1
 
     isDistinct = numRanks == numCards
-    isConsecutive = isDistinct && range ranks - numRanks <= numJokers
+    isConsecutive = isDistinct && range ranks + 1 - numRanks <= numJokers
 
 
 arg :: (a -> b) -> a -> Arg b a
