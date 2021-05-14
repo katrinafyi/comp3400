@@ -107,14 +107,14 @@ toValues :: Card -> Maybe (NonEmpty Value)
 toValues (NormalCard r _) = Just $ rankToValue r
 toValues Joker = Nothing
 
-toSuit :: Card -> Maybe Suit
-toSuit (NormalCard _ s) = Just s
+toSuit :: Card -> Maybe (NonEmpty Suit)
+toSuit (NormalCard _ s) = Just $ pure s
 toSuit Joker = Nothing
 
 toHands :: [Card] -> NonEmpty Hand
 toHands cs = do
   vs <- sequence $ mapMaybe toValues cs
-  let ss = mapMaybe toSuit cs
+  ss <- sequence $ mapMaybe toSuit cs
   pure $ Hand (sort vs) (sort ss)
 
 range :: (Enum a, Ord a) => [a] -> Int
