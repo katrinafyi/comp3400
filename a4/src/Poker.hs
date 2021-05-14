@@ -63,10 +63,9 @@ FoOAK
 -- NOT FuHo because Full House has lower rank.
 --}
 
-import           Data.List (sort, group, nub)
+import           Data.List (sort, group)
 import           Data.List.NonEmpty (NonEmpty, (<|))
 import           Data.Maybe (mapMaybe)
-import           Data.Semigroup (Arg(Arg))
 
 
 data Suit = Hearts | Clubs | Diamonds | Spades
@@ -154,23 +153,18 @@ rankHand (Hand ranks suits)
     isConsecutive = isDistinct && range ranks + 1 - numRanks <= numJokers
 
 
-arg :: (a -> b) -> a -> Arg b a
-arg f x = Arg (f x) x
-
-getArgVal :: Arg a b -> a
-getArgVal (Arg x _) = x
-
-bestHand :: [Card] -> Arg HandRanking Hand
-bestHand = minimum . fmap (arg rankHand) . toHands
+bestRank :: [Card] -> HandRanking
+bestRank = minimum . fmap rankHand . toHands
 
 
 cardList :: (Card, Card, Card, Card, Card) -> [Card]
 cardList (c1, c2, c3, c4, c5) = [c1, c2, c3, c4, c5]
 
 ranking :: (Card, Card, Card, Card, Card) -> HandRanking
-ranking = getArgVal . bestHand . cardList
+ranking = bestRank . cardList
 
 
+-- normal straight flush
 h1 :: (Card, Card, Card, Card, Card)
 h1 = ((NormalCard Ace Hearts),
     (NormalCard (Numeric 2) Hearts),
@@ -178,6 +172,7 @@ h1 = ((NormalCard Ace Hearts),
     (NormalCard (Numeric 4) Hearts),
     (NormalCard (Numeric 5) Hearts))
 
+-- straight flush with joker in middle
 h2 :: (Card, Card, Card, Card, Card)
 h2 = ((NormalCard Ace Hearts),
     (NormalCard (Numeric 2) Hearts),
@@ -185,6 +180,7 @@ h2 = ((NormalCard Ace Hearts),
     (NormalCard (Numeric 4) Hearts),
     (NormalCard (Numeric 5) Hearts))
 
+-- flush with joker
 h3 :: (Card, Card, Card, Card, Card)
 h3 = ((NormalCard Ace Hearts),
     (NormalCard Ace Hearts),
@@ -192,5 +188,6 @@ h3 = ((NormalCard Ace Hearts),
     (NormalCard (Numeric 4) Hearts),
     (NormalCard (Numeric 5) Hearts))
 
+-- all jokers
 j :: (Card, Card, Card, Card, Card)
 j = (Joker, Joker, Joker, Joker, Joker)
