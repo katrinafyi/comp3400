@@ -64,6 +64,7 @@ FoOAK
 --}
 
 import           Data.List (sort, group, nub)
+import           Data.List.NonEmpty (NonEmpty, (<|))
 import           Data.Maybe (mapMaybe)
 import           Data.Semigroup (Arg(Arg))
 
@@ -86,23 +87,23 @@ data Hand = Hand { handValues :: [Value], handSuits :: [Suit] }
   deriving (Show)
 
 
-rankToValue :: Rank -> [Value]
-rankToValue (Numeric 2) = [C2]
-rankToValue (Numeric 3) = [C3]
-rankToValue (Numeric 4) = [C4]
-rankToValue (Numeric 5) = [C5]
-rankToValue (Numeric 6) = [C6]
-rankToValue (Numeric 7) = [C7]
-rankToValue (Numeric 8) = [C8]
-rankToValue (Numeric 9) = [C9]
-rankToValue (Numeric 10) = [C10]
-rankToValue Jack = [J]
-rankToValue Queens = [Q]
-rankToValue King = [K]
-rankToValue Ace = [AL, AH]
-rankToValue (Numeric x) = error $ "unknown numeric card rank: " ++ show x
+rankToValue :: Rank -> NonEmpty Value
+rankToValue (Numeric 2)  = pure C2
+rankToValue (Numeric 3)  = pure C3
+rankToValue (Numeric 4)  = pure C4
+rankToValue (Numeric 5)  = pure C5
+rankToValue (Numeric 6)  = pure C6
+rankToValue (Numeric 7)  = pure C7
+rankToValue (Numeric 8)  = pure C8
+rankToValue (Numeric 9)  = pure C9
+rankToValue (Numeric 10) = pure C10
+rankToValue Jack         = pure J
+rankToValue Queens       = pure Q
+rankToValue King         = pure K
+rankToValue Ace          = AL <| pure AH
+rankToValue (Numeric x)  = error $ "unknown numeric card rank: " ++ show x
 
-toValues :: Card -> Maybe [Value]
+toValues :: Card -> Maybe (NonEmpty Value)
 toValues (NormalCard r _) = Just $ rankToValue r
 toValues Joker = Nothing
 
@@ -110,7 +111,7 @@ toSuit :: Card -> Maybe Suit
 toSuit (NormalCard _ s) = Just s
 toSuit Joker = Nothing
 
-toHands :: [Card] -> [Hand]
+toHands :: [Card] -> NonEmpty Hand
 toHands cs = do
   vs <- sequence $ mapMaybe toValues cs
   let ss = mapMaybe toSuit cs
@@ -184,3 +185,12 @@ h2 = ((NormalCard Ace Hearts),
     (NormalCard (Numeric 4) Hearts),
     (NormalCard (Numeric 5) Hearts))
 
+h3 :: (Card, Card, Card, Card, Card)
+h3 = ((NormalCard Ace Hearts),
+    (NormalCard Ace Hearts),
+    Joker,
+    (NormalCard (Numeric 4) Hearts),
+    (NormalCard (Numeric 5) Hearts))
+
+j :: (Card, Card, Card, Card, Card)
+j = (Joker, Joker, Joker, Joker, Joker)
