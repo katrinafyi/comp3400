@@ -88,5 +88,4 @@ solve :: [(Int, Int)] -> [[Int]]
 solve = fmap (fmap snd) . chainFromFirst isPair . ((0,0):)
 
 encode :: [(Int, Int)] -> Maybe [Int]
-encode [] = Nothing
-encode xs = minimum <$> nonEmpty (solve xs)
+encode = fmap minimum . nonEmpty . solve
