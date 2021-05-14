@@ -128,7 +128,7 @@ frequencies :: Eq a => [a] -> [Int]
 frequencies = sort . fmap length . group
 
 rankHand :: Hand -> HandRanking
-rankHand (Hand values suits)
+rankHand (Hand ranks suits)
   | maxCount == 5                  = FiOAK
   | isConsecutive && sameSuit      = StFl
   | maxCount == 4                  = FoOAK
@@ -140,18 +140,18 @@ rankHand (Hand values suits)
   | maxCount == 2                  = OnPr  -- [1, 1, 1, 2]
   | otherwise                      = HiCa
   where
-    valCounts = frequencies values
+    rankCounts = frequencies ranks
     suitCounts = frequencies suits
 
-    numCards = length values
+    numCards = length ranks
     numJokers = 5 - numCards
-    maxCount = numJokers + maximum (0:valCounts)
+    maxCount = numJokers + maximum (0:rankCounts)
 
-    numRanks = length valCounts
+    numRanks = length rankCounts
     sameSuit = length suitCounts <= 1
 
     isDistinct = numRanks == numCards
-    isConsecutive = isDistinct && range values - numRanks <= numJokers
+    isConsecutive = isDistinct && range ranks - numRanks <= numJokers
 
 
 arg :: (a -> b) -> a -> Arg b a
