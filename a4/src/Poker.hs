@@ -83,7 +83,7 @@ data HandRanking = FiOAK | StFl | FoOAK | FuHo | Fl | St | TrOAK | TwPr | OnPr |
 data Value = AL | C2 | C3 | C4 | C5 | C6 | C7 | C8 | C9 | C10 | J | Q | K | AH
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-data Hand = Hand { handValues :: [Value], handSuits :: [Suit] }
+data Hand = Hand [Value] [Suit]
   deriving (Show)
 
 
