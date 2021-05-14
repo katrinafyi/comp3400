@@ -63,7 +63,7 @@ FoOAK
 -- NOT FuHo because Full House has lower rank.
 --}
 
-import           Data.List (sort, group)
+import           Data.List (sort, group, nub)
 import           Data.Maybe (mapMaybe)
 import           Data.Semigroup (Arg(Arg))
 
@@ -116,24 +116,24 @@ toHands cs = do
   let ss = mapMaybe toSuit cs
   pure $ Hand (sort vs) (sort ss)
 
-
-isConsecutive :: (Eq a, Enum a, Bounded a) => [a] -> Bool
-isConsecutive xs = and $ zipWith (\x y -> x /= maxBound && succ x == y) xs xs'
+range :: (Enum a, Ord a) => [a] -> Int
+range [] = 0
+range xs = fromEnum high - fromEnum low
   where
-    xs' = drop 1 xs
+    low = minimum xs
+    high = maximum xs
 
 frequencies :: Eq a => [a] -> [Int]
 frequencies = sort . fmap length . group
 
-
 rankHand :: Hand -> HandRanking
 rankHand (Hand values suits)
   | maxCount == 5                  = FiOAK
-  | consecutive && sameSuit        = StFl
+  | isConsecutive && sameSuit      = StFl
   | maxCount == 4                  = FoOAK
   | maxCount == 3 && numRanks <= 2 = FuHo  -- [2, 3]
   | sameSuit                       = Fl
-  | consecutive                    = St
+  | isConsecutive                  = St
   | maxCount == 3                  = TrOAK -- [1, 1, 3]
   | maxCount == 2 && numRanks <= 3 = TwPr  -- [1, 2, 2]
   | maxCount == 2                  = OnPr  -- [1, 1, 1, 2]
@@ -142,12 +142,15 @@ rankHand (Hand values suits)
     valCounts = frequencies values
     suitCounts = frequencies suits
 
-    numJokers = 5 - length values
+    numCards = length values
+    numJokers = 5 - numCards
     maxCount = numJokers + maximum (0:valCounts)
 
     numRanks = length valCounts
     sameSuit = length suitCounts <= 1
-    consecutive = isConsecutive values
+
+    isDistinct = numRanks == numCards
+    isConsecutive = isDistinct && range values - numRanks <= numJokers
 
 
 arg :: (a -> b) -> a -> Arg b a
@@ -173,3 +176,11 @@ h1 = ((NormalCard Ace Hearts),
     (NormalCard (Numeric 3) Hearts),
     (NormalCard (Numeric 4) Hearts),
     (NormalCard (Numeric 5) Hearts))
+
+h2 :: (Card, Card, Card, Card, Card)
+h2 = ((NormalCard Ace Hearts),
+    (NormalCard (Numeric 2) Hearts),
+    Joker,
+    (NormalCard (Numeric 4) Hearts),
+    (NormalCard (Numeric 5) Hearts))
+
