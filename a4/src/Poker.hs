@@ -68,23 +68,18 @@ import           Data.List.NonEmpty (NonEmpty, (<|))
 import           Data.Maybe (mapMaybe)
 
 
-data Suit = Hearts | Clubs | Diamonds | Spades
-  deriving (Show, Eq, Ord, Enum, Bounded)
-data Rank = Numeric Int | Jack | Queens | King | Ace
-  deriving (Eq, Ord)
-data Card = NormalCard Rank Suit | Joker
-  deriving (Eq)
+data Suit = Hearts | Clubs | Diamonds | Spades deriving (Show, Eq, Ord)
+data Rank = Numeric Int | Jack | Queen | King | Ace deriving (Eq, Ord)
+data Card = NormalCard Rank Suit | Joker deriving Eq
 
-data HandRanking = FiOAK | StFl | FoOAK | FuHo | Fl | St | TrOAK | TwPr | OnPr | HiCa
-  deriving (Show, Eq, Ord)
+data HandRanking = FiOAK | StFl | FoOAK | FuHo | Fl | St | TrOAK | TwPr | OnPr | HiCa deriving (Show, Eq, Ord)
 
 
 data Value = AL | C2 | C3 | C4 | C5 | C6 | C7 | C8 | C9 | C10 | J | Q | K | AH
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-data Hand = Hand [Value] [Suit]
+data Hand = Hand Int [Value] [Suit]
   deriving (Show)
-
 
 rankToValue :: Rank -> NonEmpty Value
 rankToValue (Numeric 2)  = pure C2
@@ -97,24 +92,22 @@ rankToValue (Numeric 8)  = pure C8
 rankToValue (Numeric 9)  = pure C9
 rankToValue (Numeric 10) = pure C10
 rankToValue Jack         = pure J
-rankToValue Queens       = pure Q
+rankToValue Queen        = pure Q
 rankToValue King         = pure K
 rankToValue Ace          = AL <| pure AH
 rankToValue (Numeric x)  = error $ "unknown numeric card rank: " ++ show x
 
-toValues :: Card -> Maybe (NonEmpty Value)
-toValues (NormalCard r _) = Just $ rankToValue r
-toValues Joker = Nothing
-
-toSuits :: Card -> Maybe (NonEmpty Suit)
-toSuits (NormalCard _ s) = Just $ pure s
-toSuits Joker = Nothing
+toValueAndSuit :: Card -> Maybe (NonEmpty Value, NonEmpty Suit)
+toValueAndSuit (NormalCard r s) = Just (rankToValue r, pure s)
+toValueAndSuit Joker = Nothing
 
 toHands :: [Card] -> NonEmpty Hand
 toHands cs = do
-  vs <- sequence $ mapMaybe toValues cs
-  ss <- sequence $ mapMaybe toSuits cs
-  pure $ Hand (sort vs) (sort ss)
+  let cards = mapMaybe toValueAndSuit cs
+  let jokers = length cs - length cards
+  vs <- traverse fst cards
+  ss <- traverse snd cards
+  pure $ Hand jokers (sort vs) (sort ss)
 
 range :: (Enum a, Ord a) => [a] -> Int
 range [] = 0
@@ -127,7 +120,7 @@ frequencies :: Eq a => [a] -> [Int]
 frequencies = sort . fmap length . group
 
 rankHand :: Hand -> HandRanking
-rankHand (Hand ranks suits)
+rankHand (Hand jokers ranks suits)
   | maxCount == 5                  = FiOAK
   | isConsecutive && sameSuit      = StFl
   | maxCount == 4                  = FoOAK
@@ -143,14 +136,13 @@ rankHand (Hand ranks suits)
     suitCounts = frequencies suits
 
     numCards = length ranks
-    numJokers = 5 - numCards
-    maxCount = numJokers + maximum (0:rankCounts)
+    maxCount = jokers + maximum (0:rankCounts)
 
     numRanks = length rankCounts
     sameSuit = length suitCounts <= 1
 
     isDistinct = numRanks == numCards
-    isConsecutive = isDistinct && range ranks + 1 - numRanks <= numJokers
+    isConsecutive = isDistinct && range ranks + 1 - numRanks <= jokers
 
 
 bestRank :: [Card] -> HandRanking
