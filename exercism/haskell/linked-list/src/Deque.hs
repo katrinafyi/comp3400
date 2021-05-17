@@ -2,7 +2,6 @@ module Deque (Deque, mkDeque, pop, push, shift, unshift) where
 
 import           Control.Concurrent.STM (STM, TVar, atomically, newTVar
                                        , readTVar, writeTVar)
-import           Control.Monad ((>=>))
 
 
 -- | Doubly linked list node with head/tail sentinels.
@@ -15,7 +14,7 @@ data Node a = HeadNode { nodeRight :: TVar (Node a) }
                    }
             | TailNode { nodeLeft :: TVar (Node a) }
 
--- | A double-ended queue, with a length, head node, and tail node.
+-- | A double-ended queue, with a head node and tail node.
 data Deque a = Deque (Node a) (Node a)
 
 -- | Links the two nodes with the first argument on the left and second on the right.
@@ -43,14 +42,16 @@ insertLeft node new = do
   left <- readTVar (nodeLeft node)
   linkThree left new node
 
--- | Deletes the given node, returning its value.
+-- | Deletes the given non head/tail node, returning its old value.
+-- Returns Nothing and makes no changes if the given node was a head/tail node.
 -- Links the deleted node's left to the deleted node's right.
-deleteNode :: Node a -> STM a
-deleteNode node = do
-  left <- readTVar (nodeLeft node)
-  right <- readTVar (nodeRight node)
+deleteNode :: Node a -> STM (Maybe a)
+deleteNode (Node x l r) = do
+  left <- readTVar l
+  right <- readTVar r
   linkNodes left right
-  pure $ nodeValue node
+  pure $ Just x
+deleteNode _ = pure Nothing
 
 -- | Constructs a new Node with the given value and undefined left/right.
 newNode :: a -> STM (Node a)
@@ -66,35 +67,22 @@ emptyDeque = do
   linkNodes h t
   pure $ Deque h t
 
--- | Pops from a deque, if possible.
--- Returns the node's value if the deque is non-empty otherwise Nothing.
-popFromDeque :: TVar (Node a) -> STM (Maybe a)
-popFromDeque selector = do
-  old <- readTVar selector
-  case old of
-    Node {} -> Just <$> deleteNode old
-    _       -> pure Nothing
-
--- | Pushes to a deque, given a function to insert the new node.
-pushToDeque :: (Node a -> STM b) -> a -> STM b
-pushToDeque inserter = newNode >=> inserter
-
 -- | Constructs a new empty deque.
 mkDeque :: IO (Deque a)
 mkDeque = atomically emptyDeque
 
 -- | Pops from the right of the deque, if possible.
 pop :: Deque a -> IO (Maybe a)
-pop (Deque _ t) = atomically $ popFromDeque (nodeLeft t)
+pop (Deque _ t) = atomically $ readTVar (nodeLeft t) >>= deleteNode
 
 -- | Pushes to the right of the deque.
 push :: Deque a -> a -> IO ()
-push (Deque _ t) = atomically . pushToDeque (insertLeft t)
+push (Deque _ t) x = atomically $ newNode x >>= insertLeft t
 
 -- | Pushes from the left of the deque.
 unshift :: Deque a -> a -> IO ()
-unshift (Deque h _) = atomically . pushToDeque (insertRight h)
+unshift (Deque h _) x = atomically $ newNode x >>= insertRight h
 
 -- | Pops from the left of the deque, if possible.
 shift :: Deque a -> IO (Maybe a)
-shift (Deque h _) = atomically $ popFromDeque (nodeRight h)
+shift (Deque h _) = atomically $ readTVar (nodeRight h) >>= deleteNode
