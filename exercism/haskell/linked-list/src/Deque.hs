@@ -66,8 +66,8 @@ emptyDeque = do
   linkNodes h t
   pure $ Deque h t
 
--- | Pops from a deque, given a length var and node var.
--- Returns the node's value if length is non-zero and decrements length.
+-- | Pops from a deque, if possible.
+-- Returns the node's value if the deque is non-empty otherwise Nothing.
 popFromDeque :: TVar (Node a) -> STM (Maybe a)
 popFromDeque selector = do
   old <- readTVar selector
@@ -75,8 +75,7 @@ popFromDeque selector = do
     Node {} -> Just <$> deleteNode old
     _       -> pure Nothing
 
--- | Pushes to a deque, given a length var and function to link nodes.
--- Increments length.
+-- | Pushes to a deque, given a function to insert the new node.
 pushToDeque :: (Node a -> STM b) -> a -> STM b
 pushToDeque inserter = newNode >=> inserter
 
