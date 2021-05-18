@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f817a8fb05ef9da2411e23412f5d4f59e217edd1ff49621ce0d0fca55d2eea2d
+-- hash: e72770f5bb10e80f9f9950d362e36e6ac5dfce36fe6f62cc9f15caf42933237f
 
 name:           simple-cipher
 version:        1.2.0.5
@@ -21,6 +21,7 @@ library
   build-depends:
       base
     , random
+    , transformers
   default-language: Haskell2010
 
 test-suite test
@@ -35,4 +36,5 @@ test-suite test
     , hspec
     , random
     , simple-cipher
+    , transformers
   default-language: Haskell2010

@@ -1,8 +1,9 @@
 module Cipher (caesarDecode, caesarEncode, caesarEncodeRandom) where
 
-import Data.Char (ord, chr)
-import System.Random (randomRIO)
-import Control.Monad (replicateM)
+import           Data.Char (ord, chr)
+import           System.Random (Random(randomR), RandomGen, newStdGen)
+import           Control.Monad (replicateM)
+import           Control.Monad.Trans.State.Strict (evalState, state, State)
 
 a :: Int
 a = ord 'a'
@@ -25,11 +26,15 @@ caesarDecode = zipWith decodeChar . cycle . fmap charToInt
 caesarEncode :: String -> String -> String
 caesarEncode = zipWith encodeChar . cycle . fmap charToInt
 
-randomLowercase :: IO Char
-randomLowercase = randomRIO ('a', 'z')
+randomLowercase :: RandomGen g => State g Char
+randomLowercase = state $ randomR ('a', 'z')
+
+randomKey :: RandomGen g => State g [Char]
+randomKey = do
+  n <- state $ randomR (100, 1000)
+  replicateM n randomLowercase
 
 caesarEncodeRandom :: String -> IO (String, String)
 caesarEncodeRandom text = do
-    len <- randomRIO (100, 1000) :: IO Int
-    key <- replicateM len randomLowercase
-    pure (key, caesarEncode key text)
+  key <- evalState randomKey <$> newStdGen
+  pure (key, caesarEncode key text)
