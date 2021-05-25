@@ -2,7 +2,7 @@
 module Written where
 
 import Data.List (genericLength)
-import Test.QuickCheck
+-- import Test.QuickCheck
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 {-# ANN module "HLint: ignore Redundant lambda" #-}
@@ -19,10 +19,10 @@ p_average (x:xs) = (x + (n-1) * p_average xs) / n
 
 -- | 1.2. Uses tail recursion to compute average of the given list of numbers.
 -- Arguments are running length, running sum, remaining numbers.
--- Returns average or NaN if list is empty.
+-- Returns average or 0 if list is empty.
 h_average :: (Fractional a) => a -> a -> [a] -> a
-h_average n s [] = s / n
-h_average n s (x:xs) = h_average (n+1) (s+x) xs
+h_average _ avg [] = avg
+h_average n avg (x:xs) = h_average (n+1) ((avg*n + x) / (n+1)) xs
 
 -- | 1.3.
 average :: (Fractional a) => [a] -> a
@@ -34,12 +34,12 @@ average = h_average 0 0
 
 The invariant is:
 
-  h_average n s xs == (sum xs + s) / (length xs + n).
+  h_average n avg xs = (avg * n + sum xs) / (n + length xs)
 
 Assuming this holds, we have
 
   average xs = h_average 0 0 xs
-             = (sum xs + 0) / (length xs + 0)
+             = (0 * 0 + sum xs) / (0 + length xs)
              = sum xs / length xs
 
 which is the definition of the average, proving correctness of the average
@@ -52,24 +52,28 @@ function.
 
 We will prove this via induction. For the base case where xs = [],
 
-  RHS = (sum [] + s) / (length [] + n)  -- by definition of RHS
-      = (0 + s) / (0 + n)               -- sum and length of [] are 0
-      = s / n                           -- maths
-      = h_average n s []                -- h_average base case
-      = LHS                             -- by definition of LHS
+  RHS = (avg * n + sum []) / (n + length [])  -- by definition of RHS
+      = (avg * n + 0) / (n + 0)               -- sum and length of [] are 0
+      = avg                                   -- maths
+      = h_average n s []                      -- h_average base case
+      = LHS                                   -- by definition of LHS
 
 Assume
 
-  h_average n s xs == (sum xs + s) / (length xs + n)
+  h_average n avg xs = (avg * n + sum xs) / (n + length xs)
 
 holds for some list xs of length >= 0. We will prove it holds for (x:xs) of
 length one greater.
 
-  LHS = h_average n s (x:xs)                    -- by definition of LHS
-      = h_average (n+1) (s+x) xs                -- h_average recursive case
-      = (sum xs + (s+x)) / (length xs + (n+1))  -- inductive hypothesis
-      = (sum (x:xs) + s) / (length (x:xs) + n)  -- manipulating sum and length
-      = RHS                                     -- as required
+  LHS = h_average n avg (x:xs)                      -- by definition of LHS
+      = h_average (n+1) ((avg*n + x) / (n+1)) xs    -- h_average recursive case
+      = ( ((avg*n + x) / (n+1)) * (n+1) + sum xs ) / ((n+1) + length xs)
+                                                    -- inductive hypothesis
+      = ((avg*n + x) + sum xs) / ((n+1) + length xs)
+                                                    -- simplifying algebra
+      = (avg * n + sum (x:xs)) / (n + length (x:xs))
+                                                    -- manipulate sum and length
+      = RHS                                         -- as required
 
 We have shown the iteration invariant holds for the empty list and if it holds
 for xs, then it holds for (x:xs). By induction on the list, it holds for lists
@@ -80,14 +84,14 @@ of all lengths.
 -- | 1.6. Property tests.
 
 -- For non-empty lists, multiplying the average by the length is the sum.
-prop_average1 :: [Float] -> Property
-prop_average1 =
-  \(xs :: [Float]) -> not (null xs) ==> genericLength xs * average xs == sum xs
+-- prop_average1 :: [Float] -> Property
+-- prop_average1 =
+--   \(xs :: [Float]) -> not (null xs) ==> genericLength xs * average xs == sum xs
 
 -- For non-empty lists, average is between the minimum and maximum numbers.
-prop_average2 :: [Float] -> Property
-prop_average2 =
-  \(xs :: [Float]) -> not (null xs) ==> minimum xs <= average xs && average xs <= maximum xs
+-- prop_average2 :: [Float] -> Property
+-- prop_average2 =
+--   \(xs :: [Float]) -> not (null xs) ==> minimum xs <= average xs && average xs <= maximum xs
 
 
 
