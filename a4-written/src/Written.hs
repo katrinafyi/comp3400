@@ -18,7 +18,7 @@ p_average (x:xs) = (x + (n-1) * p_average xs) / n
     n = 1 + genericLength xs
 
 -- | 1.2. Uses tail recursion to compute average of the given list of numbers.
--- Arguments are running length, running sum, remaining numbers.
+-- Arguments are running length, running average, remaining numbers.
 -- Returns average or 0 if list is empty.
 h_average :: (Fractional a) => a -> a -> [a] -> a
 h_average _ avg [] = avg
