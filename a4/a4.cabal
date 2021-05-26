@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 18d2403d3f5fc4f79286cdd8279acf73c66f7fb37f3205ea8a8a0b40a4c1d5fd
+-- hash: a905a77f150148df54e261e0bd51ecd6988875a47920de52f4acdac5dc5e44a0
 
 name:           a4
 version:        0.1.0.0
@@ -27,7 +27,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Poker
+      Potato
   other-modules:
       Paths_a4
   hs-source-dirs:
