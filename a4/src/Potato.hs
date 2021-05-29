@@ -58,7 +58,8 @@ when converted into a base ten number.
 --}
 
 import           Control.Monad (guard)
-import           Data.List.NonEmpty (nonEmpty)
+import           Data.List.NonEmpty (nonEmpty, NonEmpty((:|)), (<|))
+import           Data.Foldable (toList)
 
 -- | Returns true if the given dominos could form an adjacent pair.
 isPair :: Eq a => (b, a) -> (a, c) -> Bool
@@ -74,18 +75,18 @@ select (x:xs) = (x, xs) : rest
 
 -- | Returns all chains which could appear following the given first value.
 -- The first value does not appear in any of the lists.
-chainFrom :: (a -> a -> Bool) -> a -> [a] -> [[a]]
+chainFrom :: (a -> a -> Bool) -> a -> [a] -> [NonEmpty a]
 chainFrom p x xs = do
   (y, ys) <- select xs
   guard $ p x y
-  chainFromFirst p (y:ys)
+  chainFromFirst p (y:|ys)
 
-chainFromFirst :: (a -> a -> Bool) -> [a] -> [[a]]
-chainFromFirst p (x:xs@(_:_)) = (x:) <$> chainFrom p x xs
-chainFromFirst _ xs = pure xs
+chainFromFirst :: (a -> a -> Bool) -> NonEmpty a -> [NonEmpty a]
+chainFromFirst _ (x:|[]) = pure $ pure x
+chainFromFirst p (x:|xs) = (x<|) <$> chainFrom p x xs
 
-solve :: [(Int, Int)] -> [[Int]]
-solve = fmap (fmap snd) . chainFromFirst isPair . ((0,0):)
+solve :: [(Int, Int)] -> [NonEmpty Int]
+solve = fmap (fmap snd) . chainFromFirst isPair . ((0,0):|)
 
 encode :: [(Int, Int)] -> Maybe [Int]
-encode = fmap minimum . nonEmpty . solve
+encode = fmap (toList . minimum) . nonEmpty . solve
