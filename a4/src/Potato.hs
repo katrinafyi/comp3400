@@ -58,8 +58,10 @@ when converted into a base ten number.
 --}
 
 import           Control.Monad (guard)
+import           Data.List (sort)
 import           Data.List.NonEmpty (nonEmpty, NonEmpty((:|)), (<|))
 import           Data.Foldable (toList)
+import qualified Data.List.NonEmpty as N
 
 -- | Returns true if the given dominos could form an adjacent pair.
 isPair :: Eq a => (b, a) -> (a, c) -> Bool
@@ -89,4 +91,5 @@ solve :: [(Int, Int)] -> [NonEmpty Int]
 solve = fmap (fmap snd) . chainFromFirst isPair . ((0,0):|)
 
 encode :: [(Int, Int)] -> Maybe [Int]
-encode = fmap (toList . minimum) . nonEmpty . solve
+encode = fmap (toList . N.head) . nonEmpty . solve . sort
+-- encode = fmap (toList . minimum) . nonEmpty . solve
