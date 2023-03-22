@@ -1,5 +1,7 @@
 # comp3400
-Exercises and assignments for [COMP3400](https://my.uq.edu.au/programs-courses/course.html?course_code=COMP3400) (Functional Programming). Done in Semester 1, 2021 with lectures presented by Paul Vrbik.
+Exercises and assignments for [COMP3400](https://my.uq.edu.au/programs-courses/course.html?course_code=COMP3400) (Functional Programming[^1]). Done in Semester 1, 2021 with lectures presented by Paul Vrbik.
+
+[^1]: Nominally, the course also covers logic programming, but this hasn't happened for several years.
 
 ## assignments
 
